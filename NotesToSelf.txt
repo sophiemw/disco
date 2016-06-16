@@ -1,0 +1,14 @@
+How to get petlib working on vm
+https://github.com/gdanezis/petlib
+
+apt-get
+sudo apt-get install python-dev
+sudo apt-get install libssl-dev
+sudo apt-get install libffi-dev
+sudo apt-get install python-pip
+sudo pip install petlib
+python -c "import petlib; petlib.run_tests()"
+
+
+home/vagrant is different to vagrant
+	vagrant is where files are shared
