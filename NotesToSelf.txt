@@ -1,0 +1,29 @@
+#How to get petlib working on vm
+https://github.com/gdanezis/petlib
+
+apt-get
+sudo apt-get install python-dev
+sudo apt-get install libssl-dev
+sudo apt-get install libffi-dev
+sudo apt-get install python-pip
+sudo pip install petlib
+python -c "import petlib; petlib.run_tests()"
+
+
+home/vagrant is different to vagrant
+	vagrant is where files are shared
+
+
+#Setting up Django
+Can tell that Django is installed and what version by:
+python -c "import django; print(django.get_version())"
+
+installing Django
+sudo pip install Django
+
+##Creating a project
+django-admin startproject mysite
+
+##Running server
+Important to have the numbers because of the vm
+python manage.py runserver 192.168.33.10:8000
