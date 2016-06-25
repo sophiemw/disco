@@ -27,3 +27,8 @@ django-admin startproject mysite
 ##Running server
 Important to have the numbers because of the vm
 python manage.py runserver 192.168.33.10:8000
+
+
+#Installing sqlite3
+https://www.sqlite.org/cli.html
+sudo apt-get install sqlite3
