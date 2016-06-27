@@ -1,4 +1,5 @@
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import logout, authenticate, login
+from django.contrib.auth.decorators import login_required
 from django.contrib import auth
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
@@ -10,7 +11,7 @@ from .forms import SignupForm
 from .models import User
 
 def index(request):
-	return HttpResponse("Hello, world. You're at the bank index.")
+	return render(request, 'bank/index.html')
 
 
 def user_login(request):
@@ -53,6 +54,18 @@ def user_login(request):
         # blank dictionary object...
         # http://stackoverflow.com/questions/21498682/django-csrf-verification-failed-request-aborted-csrf-cookie-not-set
         return render(request, 'bank/login.html', {})
+
+
+#def user_logout():
+# http://www.tangowithdjango.com/book/chapters/login.html
+# Use the login_required() decorator to ensure only those logged in can access the view.
+@login_required
+def user_logout(request):
+    # Since we know the user is logged in, we can now just log them out.
+    logout(request)
+
+    # Take the user back to the homepage.
+    return HttpResponseRedirect('/bank/')
 
 
 def signup(request):
