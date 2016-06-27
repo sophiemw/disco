@@ -5,9 +5,9 @@ from django.shortcuts import render
 from django.template import loader
 
 from .forms import SignupForm
-from .models import Users
+from .models import User
 
-def index(request):
+def login(request):
     return HttpResponse("Hello, world. You're at the bank index. aka sign in page")
 
 def signup(request):
@@ -18,10 +18,11 @@ def signup(request):
         # check whether it's valid:
         if form.is_valid():
             # process the data in form.cleaned_data as required
-            firstname = form.cleaned_data['firstname']
-            lastname = form.cleaned_data['lastname']
-            email = form.cleaned_data['email']
-            password = form.cleaned_data['password1']
+
+            new_user = form.save()
+            
+			#login(new_user)
+            
             # redirect to a new URL:
             return HttpResponseRedirect(reverse('bank:homepage', args=(1,)))
             
