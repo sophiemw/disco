@@ -8,4 +8,5 @@ urlpatterns = [
     url(r'^(?P<user_id>[0-9]+)/$', views.homepage, name='homepage'),
     url(r'signup/$', views.signup, name='signup'),
     url(r'userlist/$', views.userlist, name='userlist'),
+    url(r'^login/$', views.user_login, name='login'),
 ]
