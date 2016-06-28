@@ -9,6 +9,7 @@ from django import forms
 
 from .forms import SignupForm
 from .models import User
+from bank.models import UserProfile
 
 def index(request):
 	return render(request, 'bank/index.html')
@@ -75,16 +76,21 @@ def signup(request):
         form = SignupForm(request.POST)
         # check whether it's valid:
         if form.is_valid():
-            # process the data in form.cleaned_data as required
+			# process the data in form.cleaned_data as required
 
-            new_user = form.save()
-            new_user.set_password(user.set_password)
-            new_user.save()
-            
-			#login(new_user)
-            
-            # redirect to a new URL:
-            return HttpResponseRedirect(reverse('bank:homepage', args=(1,)))
+			new_user = form.save()
+			new_user.set_password(new_user.set_password)
+			new_user.save()
+
+			profile = UserProfile(user_id=new_user.id)
+			profile.save()
+
+			if new_user is not None:
+				login(request, new_user)
+
+			# redirect to a new URL:
+			#return HttpResponseRedirect(reverse('bank:homepage', args=(1,)))
+			return HttpResponseRedirect('/bank/')
             
     # if a GET (or any other method) we'll create a blank form
     else:
@@ -92,9 +98,9 @@ def signup(request):
 
     return render(request, 'bank/signup.html', {'form': form})
 
-
-def homepage(request, user_id):
-	return HttpResponse("User page for user id: %s" % user_id)
+@login_required
+def homepage(request):
+	return render(request, 'bank/homepage.html')
 
 
 def userlist(request):

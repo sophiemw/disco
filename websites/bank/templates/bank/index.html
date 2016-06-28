@@ -1,13 +1,10 @@
 <h1>Bank index</h1>
 
-
-
-
-
-
 {% if user.is_authenticated %}
-
-<a href="/bank/logout/">Logout</a><br />
+<h3>Hello {{ user.first_name }}</h3>
+Account<br>
+<a href="/bank/homepage/">Homepage</a><br>
+<a href="/bank/logout/">Logout</a><br>
 {% else %}
 <a href="/bank/signup/">Register Here</a><br>
 <a href="/bank/login/">Log In Here</a>
