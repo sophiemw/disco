@@ -12,20 +12,21 @@ from django.template import RequestContext
 from bank.models import UserProfile     
 
 class SignupForm(UserCreationForm):
-    #http://stackoverflow.com/questions/16562529/django-1-5-usercreationform-custom-auth-model
-    #password1 = forms.CharField(label="Password", widget=forms.PasswordInput)
-    #password2 = forms.CharField(label="Password confirmation", widget=forms.PasswordInput)
+    # http://stackoverflow.com/questions/16562529/django-1-5-usercreationform-custom-auth-model
+    # http://jessenoller.com/blog/2011/12/19/quick-example-of-extending-usercreationform-in-django
+    # https://github.com/django/django/blob/master/django/contrib/auth/forms.py
 
     class Meta:
         model = User
         fields = ("username", "first_name", "last_name", "email")
 
-        def save(self, commit=True):
-            user = super(UserCreateForm, self).save(commit=False)
-            #user.email = self.cleaned_data["email"]
-            if commit:
-                user.save()
-            return user
+        #def save(self, commit=True):
+        #    user = super(UserCreateForm, self).save(commit=False)
+        #    #user.email = self.cleaned_data["email"]
+        #    if commit:
+        #        user.save()
+        #    return user
+
 
 class GetCoinForm(forms.ModelForm):
     # http://tutorial.djangogirls.org/en/django_forms/

@@ -1,6 +1,7 @@
+from django.contrib import auth
 from django.contrib.auth import logout, authenticate, login
 from django.contrib.auth.decorators import login_required
-from django.contrib import auth
+from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render_to_response, render
@@ -38,7 +39,7 @@ def user_login(request):
                 # If the account is valid and active, we can log the user in.
                 # We'll send the user back to the homepage.
                 login(request, user)
-                return HttpResponseRedirect('/bank/2')
+                return HttpResponseRedirect('/bank/')
             else:
                 # An inactive account was used - no logging in!
                 return HttpResponse("Your account is disabled.")
@@ -70,7 +71,10 @@ def user_logout(request):
 
 def signup(request):
 	# https://docs.djangoproject.com/en/1.9/topics/forms/
-	# if this is a POST request we need to process the form data
+    # http://www.tangowithdjango.com/book/chapters/login.html#creating-a-user-registration-view-and-template
+	# http://stackoverflow.com/questions/8917185/in-django-when-i-call-user-objects-create-userusername-email-password-why
+
+    # if this is a POST request we need to process the form data
     if request.method == 'POST':
         # create a form instance and populate it with data from the request:
         form = SignupForm(request.POST)
@@ -78,19 +82,27 @@ def signup(request):
         if form.is_valid():
 			# process the data in form.cleaned_data as required
 
-			new_user = form.save()
-			new_user.set_password(new_user.set_password)
-			new_user.save()
+			#new_user = form.save()
+			#new_user.set_password(new_user.set_password)
+			#new_user.save()
 
-			profile = UserProfile(user_id=new_user.id)
-			profile.save()
+            new_user = User.objects.create_user(
+                username=form.cleaned_data['username'], 
+                email=form.cleaned_data['email'], 
+                first_name=form.cleaned_data['first_name'], 
+                last_name=form.cleaned_data['last_name'], 
+                password=form.cleaned_data['password1'])
+            new_user.save()
 
-			if new_user is not None:
-				login(request, new_user)
+            profile = UserProfile(user_id=new_user.id)
+            profile.save()
 
-			# redirect to a new URL:
-			#return HttpResponseRedirect(reverse('bank:homepage', args=(1,)))
-			return HttpResponseRedirect('/bank/')
+            if new_user is not None:
+                login(request, new_user)
+
+            # redirect to a new URL:
+            #return HttpResponseRedirect(reverse('bank:homepage', args=(1,)))
+            return HttpResponseRedirect('/bank/')
             
     # if a GET (or any other method) we'll create a blank form
     else:
