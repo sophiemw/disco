@@ -7,8 +7,7 @@ from django.shortcuts import render_to_response, render
 from django.template import RequestContext, loader
 from django import forms
 
-from .forms import SignupForm
-from .models import User
+from bank.forms import GetCoinForm, SignupForm
 from bank.models import UserProfile
 
 def index(request):
@@ -70,6 +69,7 @@ def user_logout(request):
 
 
 def signup(request):
+	# https://docs.djangoproject.com/en/1.9/topics/forms/
 	# if this is a POST request we need to process the form data
     if request.method == 'POST':
         # create a form instance and populate it with data from the request:
@@ -100,7 +100,43 @@ def signup(request):
 
 @login_required
 def homepage(request):
-	return render(request, 'bank/homepage.html')
+    #return render(request, 'bank/homepage.html')
+
+    # https://docs.djangoproject.com/en/1.9/topics/forms/
+    # http://stackoverflow.com/questions/7349865/django-using-modelform-to-edit-existing-database-entry
+    instance = UserProfile.objects.get(user_id=request.user.id)
+
+    # if this is a POST request we need to process the form data
+    if request.method == 'POST':
+        print("test1")
+        # create a form instance and populate it with data from the request:
+        form = GetCoinForm(request.POST, instance=instance, user=request.user)
+        print("test2")
+        # check whether it's valid:
+        if form.is_valid():
+            # process the data in form.cleaned_data as required
+            print("test3")
+#            if form.validate_balance_positive():
+            print("test4")
+            new_coin = form.save(commit=False)
+            new_coin.user_id = request.user.id
+            # https://docs.djangoproject.com/en/1.9/topics/forms/#field-data
+            new_coin.balance = new_coin.balance - form.cleaned_data['coinnum']
+            new_coin.save()
+
+                #print form.cleaned_data['coinnum']
+
+            # redirect to a new URL:
+            #return HttpResponseRedirect(reverse('bank:homepage', args=(1,)))
+            return HttpResponse("Coins created successfully")
+#            else:
+#                return HttpResponse("Balance becomes negative")
+
+    # if a GET (or any other method) we'll create a blank form
+    else:
+        form = GetCoinForm(instance=instance)
+
+    return render(request, 'bank/homepage.html', {'form': form})
 
 
 def userlist(request):
@@ -109,3 +145,4 @@ def userlist(request):
 		'user_list': user_list,
 	}
 	return render(request, 'bank/userlist.html', context)
+

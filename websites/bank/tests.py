@@ -1,7 +1,11 @@
+from decimal import *
+
 from django.test import TestCase
 
 #from bank.models import User
 from django.contrib.auth.models import User
+
+from bank.forms import GetCoinForm
 from bank.models import UserProfile
 
 TEST_USER = {"username": "username",
@@ -46,7 +50,7 @@ class UserTests(TestCase):
 
         #profile = UserProfile.objects.get(user_id=u.id)
         #p = request.User.profile
-        p = UserProfile(user=u, balance=32)
+        p = UserProfile(user=u, balance=TEST_USER['balance'])
 
         #print("P is : " + str(p))
 
@@ -64,3 +68,70 @@ class UserTests(TestCase):
             password=TEST_USER['password'])
 
         self.assertTrue(did_login_succeed)
+
+class CoinCreationTests(TestCase):
+    """Coin creation tests"""
+    # http://toastdriven.com/blog/2011/apr/17/guide-to-testing-in-django-2/
+
+
+    def setUp(self):
+        #create_user(username, email=None, password=None, **extra_fields)
+        self.user = User.objects.create_user(
+            username=TEST_USER['username'], 
+            email=TEST_USER['email'], 
+            password=TEST_USER['password'], 
+            first_name=TEST_USER['first_name'], 
+            last_name=TEST_USER['last_name'],
+            )
+        profile = UserProfile(user_id=self.user.id, balance=TEST_USER['balance'])
+        profile.save()
+
+    def test_cannot_submit_with_no_coin(self):
+        """User cannot convert 0 coins"""
+        form = GetCoinForm({
+            'coinnum': 0
+        })
+        self.assertFalse(form.is_valid())
+        #self.assertEqual(
+        #    form.errors['coinnum'],
+        #    ["You can't make zero coins"]
+        #)
+
+    def test_cannot_submit_not_a_number(self):
+        """User cannot convert an amount of coins which is not a number"""
+        form = GetCoinForm({
+            'coinnum': "asd"
+        })
+        self.assertFalse(form.is_valid())
+
+#    def test_coin_less_than_balance(self):
+#        """User must choose an amount of coins less than their balance"""
+#        form = GetCoinForm({
+#            'user': self.user.username,
+#            'balance': self.user.profile.balance,
+#            'coinnum': 1.00
+#            })
+
+#        print ("users balance is :" + str(self.user.profile.balance - Decimal(1.00)))
+
+#        self.assertTrue(form.is_valid())
+
+
+ #   def test_coin_greater_than_balance(self):
+#        """User cannot create more coins than they have balance"""
+        #u = User.objects.get(username=TEST_USER['username'])
+        #p = UserProfile(user=u, balance=TEST_USER['balance'])
+#        form = GetCoinForm({
+#            'user': self.user.username,
+#            'balance': self.user.profile.balance,
+#            'coinnum': 50
+#        })
+
+#        print ("self.user: " + str(self.user.profile.balance))
+
+        #cleanform = form.is_valid()
+        #u = self.setUp
+#        self.assertFalse(form.is_valid())
+        #self.assertFalse(form.user.validate_balance_positive())
+
+
