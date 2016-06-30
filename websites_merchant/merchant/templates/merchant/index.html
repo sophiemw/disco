@@ -4,11 +4,14 @@
         
     <table>
     	<tr>
-    		<td rowspan="3">Image</td>
+    		<td rowspan="4">Image</td>
     		<td><a href="{% url 'merchant:itemdetail' item.id %}">{{ item.title }}</a>
     	</tr>
     	<tr>
     		<td>{{ item.description }}</td>
+    	</tr>
+    	<tr>
+    		<td>Price in coins: {{ item.price }}</td>
     	</tr>
     	<tr>
     		<td>

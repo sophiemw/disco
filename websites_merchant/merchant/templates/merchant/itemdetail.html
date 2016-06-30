@@ -1,1 +1,22 @@
-{{ item }}
+<table>
+	<tr>
+		<td colspan="2">{{ item.title }}</td>
+	</tr>
+	<tr>
+		<td rowspan="3">image</td>
+		<td>Price in coins: {{ item.price }}</td>
+	</tr>
+	<tr>
+		<td><a href="{% url 'merchant:itembuying' item.id %}"><button type="button">BUY</button></a></td>
+	</tr>
+	<tr>
+		<td rowspan="2">{{ item.description }}</td>
+	</tr>
+	<tr>
+		<td>
+			{% for t in item.tags.all %}
+				{{ t }},
+			{% endfor %}
+		</td>
+	</tr>
+</table>
