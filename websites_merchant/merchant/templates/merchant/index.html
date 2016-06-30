@@ -1,9 +1,26 @@
 {% if all_items %}
-    <ul>
+    
     {% for item in all_items %}
-        <li><a href="{% url 'merchant:itemdetail' item.id %}">{{ item.title }}</a></li>
+        
+    <table>
+    	<tr>
+    		<td rowspan="3">Image</td>
+    		<td><a href="{% url 'merchant:itemdetail' item.id %}">{{ item.title }}</a>
+    	</tr>
+    	<tr>
+    		<td>{{ item.description }}</td>
+    	</tr>
+    	<tr>
+    		<td>
+    			{% for t in item.tags.all %}
+    				{{ t }},
+    			{% endfor %}
+    		</td>
+    	</tr>
+    </table>
+    <br>
     {% endfor %}
-    </ul>
+    
 {% else %}
     <p>No items are available.</p>
 {% endif %}
