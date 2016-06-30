@@ -13,21 +13,15 @@ def index(request):
 
 
 def itemdetail(request, item_id):
-	#return HttpResponse("Item page for item %s." % item_id)
-	#try:
-	#	item = Items.objects.get(pk=item_id)
-	#except Items.DoesNotExist:
-	#	raise Http404("Item does not exist")
-	#return render(request, 'merchant/itemdetail.html', {'item': item})
-
-
 	item = get_object_or_404(Items, pk=item_id)
 	return render(request, 'merchant/itemdetail.html', {'item': item})
 
 
 def itembuying(request, item_id):
-	return HttpResponse("Buying item page for item %s." % item_id)
+	item = get_object_or_404(Items, pk=item_id)
+	return render(request, 'merchant/itembuying.html', {'item': item})
 
 
 def itemsuccess(request, item_id):
-	return HttpResponse("Item bought successfully page for item %s." % item_id)
+	item = get_object_or_404(Items, pk=item_id)
+	return render(request, 'merchant/itemsuccess.html', {'item': item})
