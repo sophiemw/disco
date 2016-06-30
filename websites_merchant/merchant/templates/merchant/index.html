@@ -1,0 +1,29 @@
+{% if all_items %}
+    
+    {% for item in all_items %}
+        
+    <table>
+    	<tr>
+    		<td rowspan="4"><img src="/{{ item.image.url }}" alt="itempic"></td>
+    		<td><a href="{% url 'merchant:itemdetail' item.id %}">{{ item.title }}</a>
+    	</tr>
+    	<tr>
+    		<td>{{ item.description }}</td>
+    	</tr>
+    	<tr>
+    		<td>Price in coins: {{ item.price }}</td>
+    	</tr>
+    	<tr>
+    		<td>
+    			{% for t in item.tags.all %}
+    				{{ t }},
+    			{% endfor %}
+    		</td>
+    	</tr>
+    </table>
+    <br>
+    {% endfor %}
+    
+{% else %}
+    <p>No items are available.</p>
+{% endif %}
