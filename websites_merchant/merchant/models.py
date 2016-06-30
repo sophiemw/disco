@@ -11,13 +11,14 @@ class Category(models.Model):
 	def __str__(self):
 		return self.tag
 
-
+# https://coderwall.com/p/bz0sng/simple-django-image-upload-to-model-imagefield
+# https://docs.djangoproject.com/en/1.9/intro/tutorial06/
 class Items(models.Model):
 	title = models.CharField(max_length=200)
 	description = models.CharField(max_length=600)
 	price = models.IntegerField(default=15)
 	tags = models.ManyToManyField(Category)
-	#image = models.ImageField(required=False)
+	image = models.ImageField(upload_to='/static/merchant/images/', default = '/static/merchant/images/no-img.jpg')
 
 	def __str__(self):
 		return self.title

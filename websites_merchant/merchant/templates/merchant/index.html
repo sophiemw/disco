@@ -4,7 +4,7 @@
         
     <table>
     	<tr>
-    		<td rowspan="4">Image</td>
+    		<td rowspan="4"><img src="/{{ item.image.url }}" alt="itempic"></td>
     		<td><a href="{% url 'merchant:itemdetail' item.id %}">{{ item.title }}</a>
     	</tr>
     	<tr>

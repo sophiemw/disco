@@ -30,6 +30,8 @@ ALLOWED_HOSTS = []
 
 # Application definition
 
+#MEDIA_ROOT = '/media'
+
 INSTALLED_APPS = [
     'merchant.apps.MerchantConfig',
     'django.contrib.admin',
@@ -63,6 +65,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                #'django.template.context_processors.media'
             ],
         },
     },
