@@ -1,0 +1,24 @@
+<h1>Wallet homepage</h1>
+
+<h2>Hi {{ user.username }}</h2>
+
+{% if users_coins %}
+
+<p>List of coins:</p>
+    <table>
+    	<tr>
+    		<th> Coin value:</th>
+    		<th></th>
+    	</tr>
+    	
+		{% for coin in users_coins %}
+		<tr>
+			<td>{{ coin.value_of_coin }}</td>
+			<td><button type="button">Turn back into money</button></td>
+		</tr>
+	    {% endfor %}
+
+    </table>
+{% else %}
+    <p>Currently you have no coins. Visit bank website to create some</p>
+{% endif %}
