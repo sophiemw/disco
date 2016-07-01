@@ -1,12 +1,11 @@
 <h1>Wallet index</h1>
 
-
-<h3>Hello </h3>
+{% if user.is_authenticated %}
+<h3>Hello {{ user.username }}</h3>
 Account<br>
 <a href="{% url 'wallet:homepage' %}">Homepage</a><br>
 <a href="{% url 'wallet:logout' %}">Logout</a><br>
-
-<br><br>
-
+{% else %}
 <a href="{% url 'wallet:signup' %}">Register Here</a><br>
 <a href="{% url 'wallet:login' %}">Log In Here</a>
+{% endif %}
