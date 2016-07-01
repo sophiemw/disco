@@ -7,8 +7,8 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.template import RequestContext
 
-
 from wallet.forms import SignupForm
+from wallet.models import Coins
 
 def index(request):
     return render(request, 'wallet/index.html')
@@ -25,10 +25,6 @@ def signup(request):
         # check whether it's valid:
         if form.is_valid():
 			# process the data in form.cleaned_data as required
-
-			#new_user = form.save()
-			#new_user.set_password(new_user.set_password)
-			#new_user.save()
 
             new_user = User.objects.create_user(
                 username=form.cleaned_data['username'],  
@@ -95,4 +91,10 @@ def userlogout(request):
 
 @login_required
 def homepage(request):
-	return HttpResponse("This is the home page - when logged in")
+	print(request.user)
+	users_coins = Coins.objects.filter(user=request.user)
+	#print(users_coins)
+	context = {
+		'users_coins': users_coins
+	}
+	return render(request, 'wallet/homepage.html', context)
