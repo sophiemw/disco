@@ -4,7 +4,7 @@ from django.contrib.auth import logout, authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from django.template import RequestContext
 
 from wallet.forms import SignupForm
@@ -98,3 +98,7 @@ def homepage(request):
 		'users_coins': users_coins
 	}
 	return render(request, 'wallet/homepage.html', context)
+
+def payment(request, user_getting_money, payment_amount, item_id):
+    user_getting_money = get_object_or_404(User, username=user_getting_money)
+    return render(request, 'wallet/payment.html', {'user_getting_money':user_getting_money, 'payment_amount':payment_amount, 'item_id':item_id})

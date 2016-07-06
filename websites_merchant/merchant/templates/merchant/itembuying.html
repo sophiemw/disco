@@ -2,5 +2,5 @@
 
 Order total (coins): {{ item.price }}<br><br>
 
-Enter wallet info.. (NEEDS WORK)<br><button type="button">BUY</button><br>
-<a href="{% url 'merchant:itemsuccess' item.id %}"><button type="button">link</button></a>
+Enter wallet info.. (NEEDS WORK)<br>
+<a href="http://192.168.33.10:8000/wallet/merchant/{{ item.price }}/{{ item.id }}"><button type="button">Pay</button></a>
