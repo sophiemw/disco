@@ -3,4 +3,38 @@
 Order total (coins): {{ item.price }}<br><br>
 
 Enter wallet info.. (NEEDS WORK)<br>
-<a href="http://192.168.33.10:8000/wallet/merchant/{{ item.price }}/{{ item.id }}"><button type="button">Pay</button></a>
+
+<button onclick="myFunction()">Create</button>
+<button onclick="Display()">Display</button>
+<button onclick="Remove()">Remove</button>
+
+<div id="div1">
+The IFrame will go here <br>
+</div>
+<p id="demo"></p>
+This is after the IFrame
+
+<script>
+function myFunction() {
+    var x = document.createElement("IFRAME");
+    x.setAttribute("src", "http://192.168.33.10:8000/wallet/merchant/{{ item.price }}/{{ item.id }}");
+    x.setAttribute("id", "myFrame");
+    x.setAttribute("width", "800");
+    x.setAttribute("height", "500");
+    var d = document.getElementById("div1");
+    //document.body.appendChild(x);
+    d.appendChild(x);
+}
+
+function Display() {
+    var x = document.getElementById("myFrame").src;
+    document.getElementById("demo").innerHTML = x;
+}
+
+function Remove() {
+    var parent = document.getElementById("div1");
+    var child = document.getElementById("myFrame");
+    parent.removeChild(child);
+}
+
+</script>
