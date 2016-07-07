@@ -2,6 +2,23 @@
 
 <h2>Hi {{ user.username }}</h2>
 
+
+
+<form action="{% url 'wallet:homepage' %}" method="POST">{% csrf_token %}
+    {{form.as_p}}
+    <button onclick="myFunction()" type="submit">Submit</button>
+</form>
+
+
+
+
+
+
+
+
+
+
+
 {% if users_coins %}
 
 <p>List of coins:</p>

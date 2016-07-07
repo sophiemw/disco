@@ -7,7 +7,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.template import RequestContext
 
-from wallet.forms import SignupForm
+from wallet.forms import GetCoinForm, SignupForm
 from wallet.models import Coins
 
 def index(request):
@@ -44,8 +44,15 @@ def signup(request):
     return render(request, 'wallet/signup.html', {'form': form})
 
 def userlogin(request):
+    # http://stackoverflow.com/questions/16750464/django-redirect-after-login-not-working-next-not-posting
     # Like before, obtain the context for the user's request.
     context = RequestContext(request)
+
+    next = ""
+    if request.GET:  
+        #        print("!!!TEST: " + next)
+        next = request.GET['next']
+        #        print("!!!TEST22: " + next)
 
     # If the request is a HTTP POST, try to pull out the relevant information.
     if request.method == 'POST':
@@ -67,7 +74,10 @@ def userlogin(request):
                 # If the account is valid and active, we can log the user in.
                 # We'll send the user back to the homepage.
                 login(request, user)
-                return HttpResponseRedirect('/wallet/')
+                if next == "":
+                    return HttpResponseRedirect('/wallet/')
+                else:
+                    return HttpResponseRedirect(next)
             else:
                 # An inactive account was used - no logging in!
                 return HttpResponse("Your account is disabled.")
@@ -82,7 +92,7 @@ def userlogin(request):
         # No context variables to pass to the template system, hence the
         # blank dictionary object...
         # http://stackoverflow.com/questions/21498682/django-csrf-verification-failed-request-aborted-csrf-cookie-not-set
-        return render(request, 'wallet/login.html', {})
+        return render(request, 'wallet/login.html', {'next':next})
 
 @login_required
 def userlogout(request):
@@ -91,14 +101,28 @@ def userlogout(request):
 
 @login_required
 def homepage(request):
-	print(request.user)
-	users_coins = Coins.objects.filter(user=request.user)
-	#print(users_coins)
-	context = {
-		'users_coins': users_coins
-	}
-	return render(request, 'wallet/homepage.html', context)
+    # http://stackoverflow.com/questions/17754295/can-i-have-a-django-form-without-model
+    
+    if request.method == 'POST':
+        form = GetCoinForm(request.POST)
+        if form.is_valid():
+            cd = form.cleaned_data
 
+            coinnum = cd.get('coinnum')
+            return render(request, 'wallet/gettingcoins.html', {'coinnum':coinnum})
+    else:
+        form = GetCoinForm()
+
+    print(request.user)
+    users_coins = Coins.objects.filter(user=request.user)
+    #print(users_coins)
+    context = {
+        'form': form,
+        'users_coins': users_coins
+    }
+    return render(request, 'wallet/homepage.html', context)
+
+@login_required
 def payment(request, user_getting_money, payment_amount, item_id):
     user_getting_money = get_object_or_404(User, username=user_getting_money)
     return render(request, 'wallet/payment.html', {'user_getting_money':user_getting_money, 'payment_amount':payment_amount, 'item_id':item_id})
