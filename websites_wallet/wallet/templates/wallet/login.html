@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 
+{% if next %}
+<form action="/wallet/login/?next={{next}}" method="post" >
+{%else%}
 <form action="{% url 'wallet:login' %}" id="login_form" method="post">
+{% endif %}
+
     {% csrf_token %}
     Username: <input type="text" name="username" value="" size="50">
     <br>

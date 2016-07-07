@@ -1,3 +1,5 @@
+from decimal import *
+
 from django.contrib import auth
 from django.contrib.auth import logout, authenticate, login
 from django.contrib.auth.decorators import login_required
@@ -8,7 +10,7 @@ from django.shortcuts import render_to_response, render
 from django.template import RequestContext, loader
 from django import forms
 
-from bank.forms import GetCoinForm, SignupForm
+from bank.forms import SignupForm
 from bank.models import UserProfile
 
 def index(request):
@@ -16,8 +18,15 @@ def index(request):
 
 
 def user_login(request):
+    # http://stackoverflow.com/questions/16750464/django-redirect-after-login-not-working-next-not-posting
     # Like before, obtain the context for the user's request.
     context = RequestContext(request)
+
+    next = ""
+    if request.GET:  
+#        print("!!!TEST: " + next)
+        next = request.GET['next']
+#        print("!!!TEST22: " + next)
 
     # If the request is a HTTP POST, try to pull out the relevant information.
     if request.method == 'POST':
@@ -39,7 +48,14 @@ def user_login(request):
                 # If the account is valid and active, we can log the user in.
                 # We'll send the user back to the homepage.
                 login(request, user)
-                return HttpResponseRedirect('/bank/')
+                #return HttpResponseRedirect('/bank/')
+
+#                print("!!!next: "+ next)
+                if next == "":
+                    return HttpResponseRedirect('/bank/')
+                else:
+                    return HttpResponseRedirect(next)
+
             else:
                 # An inactive account was used - no logging in!
                 return HttpResponse("Your account is disabled.")
@@ -54,7 +70,8 @@ def user_login(request):
         # No context variables to pass to the template system, hence the
         # blank dictionary object...
         # http://stackoverflow.com/questions/21498682/django-csrf-verification-failed-request-aborted-csrf-cookie-not-set
-        return render(request, 'bank/login.html', {})
+        return render(request, 'bank/login.html', {'next':next})
+
 
 
 #def user_logout():
@@ -116,40 +133,36 @@ def homepage(request):
 
     # https://docs.djangoproject.com/en/1.9/topics/forms/
     # http://stackoverflow.com/questions/7349865/django-using-modelform-to-edit-existing-database-entry
-    instance = UserProfile.objects.get(user_id=request.user.id)
+#    instance = UserProfile.objects.get(user_id=request.user.id)
 
     # if this is a POST request we need to process the form data
-    if request.method == 'POST':
-        print("test1")
+#    if request.method == 'POST':
         # create a form instance and populate it with data from the request:
-        form = GetCoinForm(request.POST, instance=instance, user=request.user)
-        print("test2")
+#        form = GetCoinForm(request.POST, instance=instance, user=request.user)
         # check whether it's valid:
-        if form.is_valid():
+#        if form.is_valid():
             # process the data in form.cleaned_data as required
-            print("test3")
-#            if form.validate_balance_positive():
-            print("test4")
-            new_coin = form.save(commit=False)
-            new_coin.user_id = request.user.id
+ #            if form.validate_balance_positive():
+#            new_coin = form.save(commit=False)
+#            new_coin.user_id = request.user.id
             # https://docs.djangoproject.com/en/1.9/topics/forms/#field-data
-            new_coin.balance = new_coin.balance - form.cleaned_data['coinnum']
-            new_coin.save()
+#            new_coin.balance = new_coin.balance - form.cleaned_data['coinnum']
+#            new_coin.save()
 
                 #print form.cleaned_data['coinnum']
 
             # redirect to a new URL:
             #return HttpResponseRedirect(reverse('bank:homepage', args=(1,)))
-            return HttpResponse("Coins created successfully")
-#            else:
-#                return HttpResponse("Balance becomes negative")
+#            return HttpResponse("Coins created successfully")
+ #            else:
+ #                return HttpResponse("Balance becomes negative")
 
     # if a GET (or any other method) we'll create a blank form
-    else:
-        form = GetCoinForm(instance=instance)
+#    else:
+#        form = GetCoinForm(instance=instance)
 
-    return render(request, 'bank/homepage.html', {'form': form})
-
+#    return render(request, 'bank/homepage.html', {'form': form})
+    return render(request, 'bank/homepage.html')
 
 def userlist(request):
 	user_list = Users.objects.all()
@@ -158,3 +171,20 @@ def userlist(request):
 	}
 	return render(request, 'bank/userlist.html', context)
 
+@login_required
+def coincreation(request, num_of_coins):
+    context = {
+        'num_of_coins': num_of_coins,
+    }
+    return render(request, 'bank/coincreation.html', context)
+
+@login_required
+def confirmcoincreation(request, num_of_coins):
+    print("!!request.user: " + str(request.user.profile.balance))
+    if (Decimal(request.user.profile.balance) - Decimal(num_of_coins)) < 0:
+        return HttpResponse("Bank: Cannot create coins - insufficient funds")
+    else:
+        request.user.profile.balance = Decimal(request.user.profile.balance) - Decimal(num_of_coins)
+        request.user.profile.save()
+        print("!!!!New balance: " + str(request.user.profile.balance))
+        return HttpResponse("Bank: Coins created successfully")

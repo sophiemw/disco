@@ -1,0 +1,10 @@
+<h1>Bank homepage</h1>
+
+<h2>Hi {{ user.first_name }} {{ user.last_name }}</h2>
+
+<a href="/bank/logout/">Logout</a><br>
+
+<?-- http://stackoverflow.com/questions/26282845/userprofileuser-id-2-returns-userprofile-user-but-userprofileuser-id-2-b?>
+
+<p>Your balance is {{ request.user.profile.balance }}.</p>
+
