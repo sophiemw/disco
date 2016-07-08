@@ -1,0 +1,9 @@
+<script>
+	if (top.location!= self.location) {
+	   top.location = self.location.href;
+	}
+</script>
+
+{{ coinnum }} coins created successfully<br><br>
+
+<a href="{% url 'wallet:homepage' %}">Homepage</a><br>

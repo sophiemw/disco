@@ -187,4 +187,5 @@ def confirmcoincreation(request, num_of_coins):
         request.user.profile.balance = Decimal(request.user.profile.balance) - Decimal(num_of_coins)
         request.user.profile.save()
         print("!!!!New balance: " + str(request.user.profile.balance))
-        return HttpResponse("Bank: Coins created successfully")
+        #return HttpResponse("Bank: Coins created successfully")
+        return HttpResponseRedirect('http://192.168.33.10:8000/wallet/coinsuccess/' + num_of_coins)

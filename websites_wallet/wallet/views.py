@@ -109,6 +109,7 @@ def homepage(request):
             cd = form.cleaned_data
 
             coinnum = cd.get('coinnum')
+
             return render(request, 'wallet/gettingcoins.html', {'coinnum':coinnum})
     else:
         form = GetCoinForm()
@@ -121,6 +122,16 @@ def homepage(request):
         'users_coins': users_coins
     }
     return render(request, 'wallet/homepage.html', context)
+
+@login_required
+def coinsuccess(request, coinnum):
+    print("!!request.user: " + str(request.user))
+    new_coin = Coins(user=request.user, value_of_coin=coinnum, coin_code="testcode")
+    new_coin.save()
+
+    context = {'coinnum': coinnum}
+    return render(request, 'wallet/coinsuccess.html', context)
+
 
 @login_required
 def payment(request, user_getting_money, payment_amount, item_id):
