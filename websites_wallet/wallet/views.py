@@ -136,4 +136,23 @@ def coinsuccess(request, coinnum):
 @login_required
 def payment(request, user_getting_money, payment_amount, item_id):
     user_getting_money = get_object_or_404(User, username=user_getting_money)
-    return render(request, 'wallet/payment.html', {'user_getting_money':user_getting_money, 'payment_amount':payment_amount, 'item_id':item_id})
+    context = {
+        'user_getting_money':user_getting_money, 
+        'payment_amount':payment_amount, 
+        'item_id':item_id
+    }
+    return render(request, 'wallet/payment.html', context)
+
+
+@login_required
+def convertingcoinsbacktomoney(request, coinnum):
+    context = {'coinnum': coinnum}
+    return render(request, 'wallet/convertingcoinsbacktomoney.html', context)
+
+
+@login_required
+def coindestroysuccess(request, num_of_coins):
+    # NEED TO CHANGE THIS TO SOMETHING UNIQUE
+    request.user.coins_set.filter(value_of_coin=num_of_coins).delete()
+    context = {'num_of_coins': num_of_coins}
+    return render(request, 'wallet/coindestroysuccess.html', context)
