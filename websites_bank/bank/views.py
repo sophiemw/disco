@@ -1,5 +1,3 @@
-from decimal import *
-
 from django.contrib import auth
 from django.contrib.auth import logout, authenticate, login
 from django.contrib.auth.decorators import login_required
@@ -187,4 +185,23 @@ def confirmcoincreation(request, num_of_coins):
         request.user.profile.balance = Decimal(request.user.profile.balance) - Decimal(num_of_coins)
         request.user.profile.save()
         print("!!!!New balance: " + str(request.user.profile.balance))
-        return HttpResponse("Bank: Coins created successfully")
+        #return HttpResponse("Bank: Coins created successfully")
+        return HttpResponseRedirect('http://192.168.33.10:8000/wallet/coinsuccess/' + num_of_coins)
+
+@login_required
+def coindestroy(request, num_of_coins):
+    print("!!request.user: " + str(request.user.profile.balance))
+    context = {
+        'num_of_coins': num_of_coins
+    }
+    return render(request, 'bank/coindestroy.html', context)
+
+def coindestroysuccess(request, num_of_coins):
+    context = {'num_of_coins': num_of_coins}
+    print("!!request.user before: " + str(request.user.profile.balance))
+    request.user.profile.balance = request.user.profile.balance + int(num_of_coins)
+    request.user.profile.save()
+    print("!!request.user after: " + str(request.user.profile.balance))
+    #return render(request, 'bank/coindestroysuccess.html', context)
+    return HttpResponseRedirect('http://192.168.33.10:8000/wallet/coindestroysuccess/' + num_of_coins)
+

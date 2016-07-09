@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-from decimal import *
-
 from django.contrib.auth.models import User
 from django.core import validators
 from django.core.exceptions import ValidationError
@@ -12,9 +10,7 @@ from django.utils.encoding import python_2_unicode_compatible
 @python_2_unicode_compatible  # only if you need to support Python 2
 class Coins(models.Model):
 	user = models.ForeignKey(User, on_delete=models.CASCADE)
-	value_of_coin = models.DecimalField(decimal_places=2,
-		max_digits=12, 
-		validators=[validators.MinValueValidator(Decimal('0.01'))]
+	value_of_coin = models.IntegerField(validators=[validators.MinValueValidator('0')]
 	)
 	coin_code = models.CharField(max_length=500, )
 

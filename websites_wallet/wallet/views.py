@@ -109,6 +109,7 @@ def homepage(request):
             cd = form.cleaned_data
 
             coinnum = cd.get('coinnum')
+
             return render(request, 'wallet/gettingcoins.html', {'coinnum':coinnum})
     else:
         form = GetCoinForm()
@@ -123,6 +124,35 @@ def homepage(request):
     return render(request, 'wallet/homepage.html', context)
 
 @login_required
+def coinsuccess(request, coinnum):
+    print("!!request.user: " + str(request.user))
+    new_coin = Coins(user=request.user, value_of_coin=coinnum, coin_code="testcode")
+    new_coin.save()
+
+    context = {'coinnum': coinnum}
+    return render(request, 'wallet/coinsuccess.html', context)
+
+
+@login_required
 def payment(request, user_getting_money, payment_amount, item_id):
     user_getting_money = get_object_or_404(User, username=user_getting_money)
-    return render(request, 'wallet/payment.html', {'user_getting_money':user_getting_money, 'payment_amount':payment_amount, 'item_id':item_id})
+    context = {
+        'user_getting_money':user_getting_money, 
+        'payment_amount':payment_amount, 
+        'item_id':item_id
+    }
+    return render(request, 'wallet/payment.html', context)
+
+
+@login_required
+def convertingcoinsbacktomoney(request, coinnum):
+    context = {'coinnum': coinnum}
+    return render(request, 'wallet/convertingcoinsbacktomoney.html', context)
+
+
+@login_required
+def coindestroysuccess(request, num_of_coins):
+    # NEED TO CHANGE THIS TO SOMETHING UNIQUE
+    request.user.coins_set.filter(value_of_coin=num_of_coins).delete()
+    context = {'num_of_coins': num_of_coins}
+    return render(request, 'wallet/coindestroysuccess.html', context)
