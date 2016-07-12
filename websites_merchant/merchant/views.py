@@ -1,3 +1,4 @@
+import requests
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, render
 
@@ -24,4 +25,7 @@ def itembuying(request, item_id):
 
 def itemsuccess(request, item_id):
 	item = get_object_or_404(Items, pk=item_id)
+
+	r = requests.get('http://192.168.33.10:8090/bank/payuser/?amount=%i' %(item.price))
+	
 	return render(request, 'merchant/itemsuccess.html', {'item': item})

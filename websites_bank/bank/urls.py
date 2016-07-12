@@ -15,4 +15,5 @@ urlpatterns = [
     url(r'^confirmcoincreation/(?P<num_of_coins>[0-9]+)/$', views.confirmcoincreation, name='confirmcoincreation'),
     url(r'^coindestroy/(?P<num_of_coins>[0-9]+)/$', views.coindestroy, name='coindestroy'),
     url(r'^coindestroysuccess/(?P<num_of_coins>[0-9]+)/$', views.coindestroysuccess, name='coindestroysuccess'),
+    url(r'payuser/$', views.payuser, name='payuser'),
 ]

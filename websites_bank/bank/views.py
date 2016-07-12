@@ -196,6 +196,8 @@ def coindestroy(request, num_of_coins):
     }
     return render(request, 'bank/coindestroy.html', context)
 
+
+@login_required
 def coindestroysuccess(request, num_of_coins):
     context = {'num_of_coins': num_of_coins}
     print("!!request.user before: " + str(request.user.profile.balance))
@@ -205,3 +207,18 @@ def coindestroysuccess(request, num_of_coins):
     #return render(request, 'bank/coindestroysuccess.html', context)
     return HttpResponseRedirect('http://192.168.33.10:8000/wallet/coindestroysuccess/' + num_of_coins)
 
+
+
+def payuser(request):
+    amount = request.GET.get('amount')
+    print("SUCCESS")
+
+    merchantacc = User.objects.get(username="merchant")
+    print(merchantacc)
+    print("Balance before: " + str(merchantacc.profile.balance))
+    merchantacc.profile.balance = merchantacc.profile.balance + int(amount)
+    merchantacc.profile.save()
+    print("Balance after: " + str(merchantacc.profile.balance))
+    #put money into merchant account here
+
+    return HttpResponse(True)
