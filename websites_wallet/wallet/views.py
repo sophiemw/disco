@@ -10,6 +10,10 @@ from django.template import RequestContext
 from wallet.forms import GetCoinForm, SignupForm
 from wallet.models import Coins
 
+import BLcred, blshim
+
+import requests
+
 def index(request):
     return render(request, 'wallet/index.html')
 
@@ -123,8 +127,13 @@ def homepage(request):
     }
     return render(request, 'wallet/homepage.html', context)
 
+
 @login_required
 def coinsuccess(request, coinnum):
+
+    #TODO WEBSERVICE CALL
+
+
     print("!!request.user: " + str(request.user))
     new_coin = Coins(user=request.user, value_of_coin=coinnum, coin_code="testcode")
     new_coin.save()
@@ -156,3 +165,47 @@ def coindestroysuccess(request, num_of_coins):
     request.user.coins_set.filter(value_of_coin=num_of_coins).delete()
     context = {'num_of_coins': num_of_coins}
     return render(request, 'wallet/coindestroysuccess.html', context)
+
+
+def testcoincreation(request):
+
+
+
+    # value, expiry date
+    LT_user_state, user_commit = BLcred.BL_user_setup(blshim.params, [10, 20])
+
+    print("user_commit: " + str(user_commit))
+
+    s_user_commit = blshim.serialise(user_commit)
+
+    r = requests.get('http://192.168.33.10:8090/bank/testPrepVal/?serialised_C=%s' %(s_user_commit))
+    c = r.content
+    #d = json.loads(c)
+
+    (rnd, aap) = blshim.deserialise(c)
+    print("rnd: " + str(rnd))
+    print("aap: " + str(aap))
+
+    BLcred.BL_user_preparation(LT_user_state, rnd)
+
+    msg_to_issuer_e = epsilon = BLcred.BL_user_validation(LT_user_state, (blshim.LT_issuer_state.y, ), aap)
+
+
+    # new webservice here
+    # sending e
+    s_msg_to_issuer_ec = blshim.serialise((msg_to_issuer_e, user_commit))
+    
+    r = requests.get('http://192.168.33.10:8090/bank/testVal2/?serialised_ec=%s' %(s_msg_to_issuer_ec))
+    c = r.content
+
+    msg_to_user_crcprp = blshim.deserialise(c)
+
+    signature = BLcred.BL_user_validation2(LT_user_state, msg_to_user_crcprp)
+
+    ##VALIDATION THAT THE COIN IS VALID
+    b = BLcred.BL_check_signature(blshim.params, (blshim.LT_issuer_state.y, ), signature)
+
+    print ("{{{{{{{{{{{{{{{{{{{{ " + str(b))
+
+
+    return HttpResponse("user_commit: " + str(user_commit))

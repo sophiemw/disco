@@ -9,7 +9,9 @@ from django.template import RequestContext, loader
 from django import forms
 
 from bank.forms import SignupForm
-from bank.models import UserProfile
+from bank.models import CoinValidation, UserProfile
+
+import blshim, BLcred
 
 def index(request):
 	return render(request, 'bank/index.html')
@@ -222,3 +224,50 @@ def payuser(request):
     #put money into merchant account here
 
     return HttpResponse(True)
+
+
+def testPrepVal(request):
+    # PREPARATION STAGE - BL_issuer_preparation
+    serialised_C = request.GET.get('serialised_C')
+    real_C = blshim.deserialise(serialised_C)
+
+    msg_to_user_rnd = BLcred.BL_issuer_preparation(blshim.LT_issuer_state, real_C)
+    print("msg_to_user_rnd: " + str(msg_to_user_rnd))
+
+    #TODO REMEBER MULTITHREADING 
+
+    # VALIDATION STAGE 1 - BL_issuer_validation
+    msg_to_user_aap = BLcred.BL_issuer_validation(blshim.LT_issuer_state)
+
+    s = blshim.serialise((msg_to_user_rnd, msg_to_user_aap))
+    print s
+
+    js_cpu = blshim.serialise((blshim.LT_issuer_state.cp, blshim.LT_issuer_state.u, blshim.LT_issuer_state.r1p, blshim.LT_issuer_state.r2p))
+    #js_cpu = "HIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"
+    j = CoinValidation(commitment=serialised_C, jsonstring=js_cpu)
+    j.save()
+
+    return HttpResponse(s)
+
+
+def testVal2(request):
+    serialised_ec = request.GET.get('serialised_ec')
+    real_e, real_c = blshim.deserialise(serialised_ec)
+
+    serialised_C = blshim.serialise(real_c)
+
+    print("***********************88")
+    db = CoinValidation.objects.get(commitment=serialised_C)
+    print("!!!!!!!!!!!!!!!!!!!!!!! " + str(db.jsonstring))
+    blshim.LT_issuer_state.cp, blshim.LT_issuer_state.u, blshim.LT_issuer_state.r1p, blshim.LT_issuer_state.r2p = blshim.deserialise(db.jsonstring)
+
+    msg_to_user_crcprp = BLcred.BL_issuer_validation_2(blshim.LT_issuer_state, real_e)
+
+    s = blshim.serialise(msg_to_user_crcprp)
+    print "msg_to_user_crcprp: " + s
+
+    return HttpResponse(s)
+
+#def getVar(request):
+#    print("G is: " + games3.getG())
+#    return HttpResponse("SUCCESS")

@@ -39,3 +39,11 @@ class UserProfile(models.Model):
             str(self.balance)
         ])
 
+
+@python_2_unicode_compatible  # only if you need to support Python 2
+class CoinValidation(models.Model):
+    commitment = models.TextField()
+    jsonstring = models.TextField()
+
+    def __str__(self):
+        return self.commitment
