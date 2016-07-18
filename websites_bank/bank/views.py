@@ -268,6 +268,14 @@ def testVal2(request):
 
     return HttpResponse(s)
 
-#def getVar(request):
-#    print("G is: " + games3.getG())
-#    return HttpResponse("SUCCESS")
+def testvalidation(request):
+    serialised_entry = request.GET.get('entry')
+    msg_to_merchant_epmupcoin, desc = blshim.deserialise(serialised_entry)
+
+    valid = blshim.spending_3(msg_to_merchant_epmupcoin, desc)
+
+    # also do double spending checks here
+    # expiry 
+    # update merchant's bank account
+
+    return HttpResponse(blshim.serialise((valid, "24")))

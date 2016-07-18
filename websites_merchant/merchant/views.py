@@ -44,7 +44,15 @@ def test_spending_protocol(request):
 
 	msg_to_merchant_epmupcoin = blshim.deserialise(c)
 
+	# want the validation to happen on the bank side because double spending
+	#print("@@@@@" + str(blshim.spending_3(msg_to_merchant_epmupcoin, desc)))
 
-	print("@@@@@" + str(blshim.spending_3(msg_to_merchant_epmupcoin, desc)))
+	entry = blshim.serialise((msg_to_merchant_epmupcoin, desc))
+	r = requests.get('http://192.168.33.10:8090/bank/testvalidation/?entry=%s' %(entry))
+	c = r.content
 
-	return HttpResponse(c)
+	validated, errormessage = blshim.deserialise(c)
+
+	print(errormessage)
+
+	return HttpResponse(validated)

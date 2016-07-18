@@ -19,6 +19,6 @@ urlpatterns = [
     #url(r'getVar/$', views.getVar, name='getVar'),
     url(r'testPrepVal/$', views.testPrepVal, name='testPrepVal'),
     url(r'testVal2/$', views.testVal2, name='testVal2'),
-    
+    url(r'testvalidation/$', views.testvalidation, name='testvalidation'),
     
 ]
