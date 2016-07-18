@@ -5,7 +5,6 @@
 #  ACM, 2013.
 
 import datetime
-import blshim
 
 from hashlib import sha256
 from base64 import b64encode
@@ -544,7 +543,7 @@ if __name__ == "__main__":
 
 
 
-
+    # (defining desc here puts it in the global scope (spending_3 needs it as a param))
     desc = spending_1(params)
     msg_to_merchant_epmupcoin = spending_2(LT_user_state, coin, desc, params)
     print(spending_3(msg_to_merchant_epmupcoin, params, issuer_pub))

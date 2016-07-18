@@ -3,6 +3,9 @@ import BLcred
 from petlib.bn import Bn
 from petlib.ec import EcGroup, EcPt
 
+from hashlib import sha256
+from base64 import b64encode
+
 params = BLcred.BL_setup()
 (G, q, g, h, z, hs) = params
 issuer_state = None
@@ -129,3 +132,77 @@ def getParams():
 #--------------------------------------------------------------------------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------------------------------------------------------------------------
+
+def test_Hash(params):
+    # e-coin: There is a lot of Hashing going on - make it into a function rather than inline it each time...
+    # e-coin: Make the Hashing more general purpose by using the str() function for each class type. 
+    # e-coin: EcPT__str__() gives a different encoding than export() 
+    # e-coin: Hstr = list(map(EcPt.export, params))
+    Hstr = list(str(e) for e in params)
+    Hhex = b"|".join(map(b64encode, Hstr))
+    return Bn.from_binary(sha256(Hhex).digest())
+
+
+def spending_1():
+    (G, q, g, h, z, hs) = params
+    im = "merchantaccount details"
+
+    # http://stackoverflow.com/questions/415511/how-to-get-current-time-in-python
+    datetime2 = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')
+
+    # https://docs.python.org/2/library/hashlib.html
+    #desc = sha256((im, datetime)).hexdigest()
+
+    # H = [im, datetime]
+#    Hstr = [im, datetime]
+#    Hhex = b"|".join(map(b64encode, Hstr))
+#    desc = Bn.from_binary(sha256(Hhex).digest()) % q
+
+    desc = test_Hash([im, datetime]) % q
+
+    return desc
+
+def spending_2(tau, gam, coin, desc):
+#    tau = user_state.tau
+    (G, q, g, h, z, hs) = params
+#    gam = user_state.gam
+
+#    H = [tau * z, coin, desc]
+#    Hstr = 
+
+    epsilonp = test_Hash([tau * z] + list(coin) + [desc]) % q
+
+    mup = (tau - epsilonp * gam) % q
+   # print(mup.__class__.__name__)
+
+    msg_to_merchant_epmupcoin = (epsilonp, mup, coin)
+
+    return msg_to_merchant_epmupcoin
+
+def spending_3(msg_to_merchant_epmupcoin, desc):
+
+    (epsilonp, mup, coin) = msg_to_merchant_epmupcoin
+    (m, zet, zet1, zet2, om, omp, ro, ro1p, ro2p) = coin
+    (G, q, g, h, z, hs) = params
+
+    #TOOD
+    #assert zet != 1 
+
+    #a = (mup * z + epsilonp * zet, coin, desc)
+    #assert epsilonp == sha256(a).hexdigest()
+    assert epsilonp == (test_Hash([mup * z + epsilonp * zet] + list(coin) + [desc]) % q)
+
+    lhs = (om + omp) % q
+    rhs_h = [zet, zet1, 
+            ro * g + om * LT_issuer_state.y,
+            ro1p * g + omp * zet1,
+            ro2p * h + omp * zet2, ## problem
+            mup * z + epsilonp * zet]
+
+    #rhs = test_Hash(rhs_h) % q
+
+    Hstr = list(map(EcPt.export, rhs_h)) + [b'']
+    Hhex = b"|".join(map(b64encode, Hstr))
+    rhs = Bn.from_binary(sha256(Hhex).digest()) % q
+
+    return (lhs == rhs)
