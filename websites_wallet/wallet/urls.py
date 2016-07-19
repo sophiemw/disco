@@ -10,11 +10,12 @@ urlpatterns = [
     url(r'logout/$', views.userlogout, name='logout'),
     url(r'homepage/$', views.homepage, name='homepage'),
     url(r'^(?P<user_getting_money>[A-Za-z0-9\-\_]+)/(?P<payment_amount>[0-9]+)/(?P<item_id>[0-9]+)/$', views.payment, name='payment'),
-    url(r'coinsuccess/(?P<coinnum>[0-9]+)$', views.coinsuccess, name='coinsuccess'),
+    url(r'coinsuccess/$', views.coinsuccess, name='coinsuccess'),
     url(r'convertingcoinsbacktomoney/(?P<coinnum>[0-9]+)$', views.convertingcoinsbacktomoney, name='convertingcoinsbacktomoney'),
     url(r'^coindestroysuccess/(?P<num_of_coins>[0-9]+)/$', views.coindestroysuccess, name='coindestroysuccess'),
+    url(r'^coindestroysuccess2/(?P<num_of_coins>[0-9]+)/$', views.coindestroysuccess2, name='coindestroysuccess2'),
 	url(r'testcoincreation/$', views.testcoincreation, name='testcoincreation'),
     url(r'testspending/$', views.testspending, name='testspending'),
-
+    url(r'coinsuccess2/$', views.coinsuccess2, name='coinsuccess2'),
     
 ]

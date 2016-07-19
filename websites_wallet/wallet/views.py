@@ -129,18 +129,20 @@ def homepage(request):
 
 
 @login_required
-def coinsuccess(request, coinnum):
+def coinsuccess(request):
+    num_of_coins, sessionid = blshim.deserialise(request.GET.get('entry'))
 
-    #TODO WEBSERVICE CALL
+    ignoreresponse = testcoincreation(request, num_of_coins, sessionid)
 
+    #new_coin = Coins(user=request.user, value_of_coin=coinnum, serialised_code_rnd_tau_gam="testcode")
+    #new_coin.save()
 
-    print("!!request.user: " + str(request.user))
-    new_coin = Coins(user=request.user, value_of_coin=coinnum, coin_code="testcode")
-    new_coin.save()
-
-    context = {'coinnum': coinnum}
+    context = {'num_of_coins': num_of_coins}
     return render(request, 'wallet/coinsuccess.html', context)
 
+@login_required
+def coinsuccess2(request):
+    return render(request, 'wallet/coinsuccess2.html')
 
 @login_required
 def payment(request, user_getting_money, payment_amount, item_id):
@@ -167,18 +169,23 @@ def coindestroysuccess(request, num_of_coins):
     return render(request, 'wallet/coindestroysuccess.html', context)
 
 
-def testcoincreation(request):
+@login_required
+def coindestroysuccess2(request, num_of_coins):
+    return render(request, 'wallet/coindestroysuccess2.html', context)
+
+
+def testcoincreation(request, coinnum, sessionid):
 
 
 
     # value, expiry date
-    LT_user_state, user_commit = BLcred.BL_user_setup(blshim.params, [10, 20])
+    LT_user_state, user_commit = BLcred.BL_user_setup(blshim.params, [coinnum, 20])
 
 #    print("user_commit: " + str(user_commit))
 
-    s_user_commit = blshim.serialise(user_commit)
+    s_entry = blshim.serialise((user_commit, sessionid))
 
-    r = requests.get('http://192.168.33.10:8090/bank/testPrepVal/?serialised_C=%s' %(s_user_commit))
+    r = requests.get('http://192.168.33.10:8090/bank/testPrepVal/?serialised_entry=%s' %(s_entry))
     c = r.content
     #d = json.loads(c)
 
@@ -193,9 +200,9 @@ def testcoincreation(request):
 
     # new webservice here
     # sending e
-    s_msg_to_issuer_ec = blshim.serialise((msg_to_issuer_e, user_commit))
+    s_entry = blshim.serialise((msg_to_issuer_e, user_commit, sessionid))
     
-    r = requests.get('http://192.168.33.10:8090/bank/testVal2/?serialised_ec=%s' %(s_msg_to_issuer_ec))
+    r = requests.get('http://192.168.33.10:8090/bank/testVal2/?serialised_entry=%s' %(s_entry))
     c = r.content
 
     msg_to_user_crcprp = blshim.deserialise(c)
@@ -225,7 +232,7 @@ def testcoincreation(request):
 
     # user=request.user
     testuser = User.objects.get(username="test1")
-    c = Coins(user=testuser, value_of_coin=3, serialised_code_rnd_tau_gam=serialised_code_rnd_tau_gam)
+    c = Coins(user=testuser, value_of_coin=coinnum, serialised_code_rnd_tau_gam=serialised_code_rnd_tau_gam)
     c.save()
 
 

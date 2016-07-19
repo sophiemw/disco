@@ -28,13 +28,14 @@ def itembuying(request, item_id):
 def itemsuccess(request, item_id):
 	item = get_object_or_404(Items, pk=item_id)
 
-	r = requests.get('http://192.168.33.10:8090/bank/payuser/?amount=%i' %(item.price))
-	
-	return render(request, 'merchant/itemsuccess.html', {'item': item})
+	valid, message = spendingGuts()
 
-def test_spending_protocol(request):
+	if valid:
+		return render(request, 'merchant/itemsuccess.html', {'item': item})
+	else:
+		return HttpResponse("error")
 
-
+def spendingGuts():
 	desc = blshim.spending_1()
 	desc_ser = blshim.serialise(desc)
 
@@ -51,7 +52,16 @@ def test_spending_protocol(request):
 	r = requests.get('http://192.168.33.10:8090/bank/testvalidation/?entry=%s' %(entry))
 	c = r.content
 
-	validated, errormessage = blshim.deserialise(c)
+	return blshim.deserialise(c)
+
+def test_spending_protocol(request):
+	
+
+	validated, errormessage = spendingGuts()
+
+
+#	if validated:
+#		r = requests.get('http://192.168.33.10:8090/bank/payuser/?amount=%i' %(item.price))
 
 	print(errormessage)
 
