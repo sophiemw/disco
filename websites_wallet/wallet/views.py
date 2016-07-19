@@ -129,14 +129,15 @@ def homepage(request):
 
 
 @login_required
-def coinsuccess(request, coinnum):
-
-    #TODO WEBSERVICE CALL
-
-
+def coinsuccess((request), coinnum):
     print("!!request.user: " + str(request.user))
-    new_coin = Coins(user=request.user, value_of_coin=coinnum, coin_code="testcode")
-    new_coin.save()
+
+    ignoreresponse = testcoincreation(request, coinnum)
+
+    print("HAPPY: " + str(ignoreresponse))
+
+    #new_coin = Coins(user=request.user, value_of_coin=coinnum, serialised_code_rnd_tau_gam="testcode")
+    #new_coin.save()
 
     context = {'coinnum': coinnum}
     return render(request, 'wallet/coinsuccess.html', context)
@@ -167,12 +168,12 @@ def coindestroysuccess(request, num_of_coins):
     return render(request, 'wallet/coindestroysuccess.html', context)
 
 
-def testcoincreation(request):
+def testcoincreation(request, coinnum):
 
 
 
     # value, expiry date
-    LT_user_state, user_commit = BLcred.BL_user_setup(blshim.params, [10, 20])
+    LT_user_state, user_commit = BLcred.BL_user_setup(blshim.params, [coinnum, 20])
 
 #    print("user_commit: " + str(user_commit))
 
@@ -225,7 +226,7 @@ def testcoincreation(request):
 
     # user=request.user
     testuser = User.objects.get(username="test1")
-    c = Coins(user=testuser, value_of_coin=3, serialised_code_rnd_tau_gam=serialised_code_rnd_tau_gam)
+    c = Coins(user=testuser, value_of_coin=coinnum, serialised_code_rnd_tau_gam=serialised_code_rnd_tau_gam)
     c.save()
 
 

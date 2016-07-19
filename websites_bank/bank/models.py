@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from decimal import *
+#from decimal import *
 
 from django.contrib.auth.models import User
 from django.core import validators
@@ -15,10 +15,12 @@ from django.utils.translation import ugettext_lazy as _
 @python_2_unicode_compatible  # only if you need to support Python 2
 class UserProfile(models.Model):  
     user = models.OneToOneField(User, related_name='profile')
-    balance = models.DecimalField(decimal_places=2, 
+    balance = models.IntegerField(
+        #decimal_places=2, 
         default=20, 
-        max_digits=12, 
-        validators=[validators.MinValueValidator(Decimal('0.01'))]
+        #max_digits=12, 
+        #validators=[validators.MinValueValidator(Decimal('0.01'))]
+        validators=[validators.MinValueValidator('1')]
         )
 
     def __str__(self):

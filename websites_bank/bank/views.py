@@ -181,10 +181,13 @@ def coincreation(request, num_of_coins):
 @login_required
 def confirmcoincreation(request, num_of_coins):
     print("!!request.user: " + str(request.user.profile.balance))
-    if (Decimal(request.user.profile.balance) - Decimal(num_of_coins)) < 0:
+
+    new_balance = int(request.user.profile.balance) - int(num_of_coins)
+
+    if (new_balance) < 0:
         return HttpResponse("Bank: Cannot create coins - insufficient funds")
     else:
-        request.user.profile.balance = Decimal(request.user.profile.balance) - Decimal(num_of_coins)
+        request.user.profile.balance = new_balance
         request.user.profile.save()
         print("!!!!New balance: " + str(request.user.profile.balance))
         #return HttpResponse("Bank: Coins created successfully")
@@ -277,5 +280,7 @@ def testvalidation(request):
     # also do double spending checks here
     # expiry 
     # update merchant's bank account
+
+    # TODO payuser()
 
     return HttpResponse(blshim.serialise((valid, "24")))
