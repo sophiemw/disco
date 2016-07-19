@@ -20,7 +20,7 @@ class UserProfile(models.Model):
         default=20, 
         #max_digits=12, 
         #validators=[validators.MinValueValidator(Decimal('0.01'))]
-        validators=[validators.MinValueValidator('1')]
+        validators=[validators.MinValueValidator(1)]
         )
 
     def __str__(self):
@@ -46,6 +46,9 @@ class UserProfile(models.Model):
 class CoinValidation(models.Model):
     commitment = models.TextField()
     jsonstring = models.TextField()
+    sessionID = models.TextField()
+    user = models.TextField()
+    num_of_coins = models.IntegerField()
 
     def __str__(self):
         return self.commitment

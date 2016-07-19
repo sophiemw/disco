@@ -129,39 +129,6 @@ def signup(request):
 
 @login_required
 def homepage(request):
-    #return render(request, 'bank/homepage.html')
-
-    # https://docs.djangoproject.com/en/1.9/topics/forms/
-    # http://stackoverflow.com/questions/7349865/django-using-modelform-to-edit-existing-database-entry
-#    instance = UserProfile.objects.get(user_id=request.user.id)
-
-    # if this is a POST request we need to process the form data
-#    if request.method == 'POST':
-        # create a form instance and populate it with data from the request:
-#        form = GetCoinForm(request.POST, instance=instance, user=request.user)
-        # check whether it's valid:
-#        if form.is_valid():
-            # process the data in form.cleaned_data as required
- #            if form.validate_balance_positive():
-#            new_coin = form.save(commit=False)
-#            new_coin.user_id = request.user.id
-            # https://docs.djangoproject.com/en/1.9/topics/forms/#field-data
-#            new_coin.balance = new_coin.balance - form.cleaned_data['coinnum']
-#            new_coin.save()
-
-                #print form.cleaned_data['coinnum']
-
-            # redirect to a new URL:
-            #return HttpResponseRedirect(reverse('bank:homepage', args=(1,)))
-#            return HttpResponse("Coins created successfully")
- #            else:
- #                return HttpResponse("Balance becomes negative")
-
-    # if a GET (or any other method) we'll create a blank form
-#    else:
-#        form = GetCoinForm(instance=instance)
-
-#    return render(request, 'bank/homepage.html', {'form': form})
     return render(request, 'bank/homepage.html')
 
 def userlist(request):
@@ -181,17 +148,25 @@ def coincreation(request, num_of_coins):
 @login_required
 def confirmcoincreation(request, num_of_coins):
     print("!!request.user: " + str(request.user.profile.balance))
+    print("request.session._session_key: " + request.session._session_key)
 
     new_balance = int(request.user.profile.balance) - int(num_of_coins)
 
     if (new_balance) < 0:
         return HttpResponse("Bank: Cannot create coins - insufficient funds")
     else:
-        request.user.profile.balance = new_balance
-        request.user.profile.save()
-        print("!!!!New balance: " + str(request.user.profile.balance))
-        #return HttpResponse("Bank: Coins created successfully")
-        return HttpResponseRedirect('http://192.168.33.10:8000/wallet/coinsuccess/' + num_of_coins)
+        sessionid = request.session._session_key
+
+        j = CoinValidation(sessionID=sessionid, user=request.user.username, num_of_coins=num_of_coins, commitment="", jsonstring="")
+        j.save()
+        
+        entry = blshim.serialise((int(num_of_coins), sessionid))
+
+        s = 'http://192.168.33.10:8000/wallet/coinsuccess/?entry=%s' %(entry)
+
+        print ("string: " + s)
+
+        return HttpResponseRedirect(s)
 
 @login_required
 def coindestroy(request, num_of_coins):
@@ -231,8 +206,8 @@ def payuser(request):
 
 def testPrepVal(request):
     # PREPARATION STAGE - BL_issuer_preparation
-    serialised_C = request.GET.get('serialised_C')
-    real_C = blshim.deserialise(serialised_C)
+    serialised_entry = request.GET.get('serialised_entry')
+    real_C, sessionid = blshim.deserialise(serialised_entry)
 
     msg_to_user_rnd = BLcred.BL_issuer_preparation(blshim.LT_issuer_state, real_C)
     print("msg_to_user_rnd: " + str(msg_to_user_rnd))
@@ -245,31 +220,46 @@ def testPrepVal(request):
     s = blshim.serialise((msg_to_user_rnd, msg_to_user_aap))
     print s
 
+    # can't easily use sessions - browsers
+    serialised_C = blshim.serialise(real_C)
     js_cpu = blshim.serialise((blshim.LT_issuer_state.cp, blshim.LT_issuer_state.u, blshim.LT_issuer_state.r1p, blshim.LT_issuer_state.r2p))
     #js_cpu = "HIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"
-    j = CoinValidation(commitment=serialised_C, jsonstring=js_cpu)
+
+    j = CoinValidation.objects.get(sessionID=sessionid)
+
+    j.commitment=serialised_C
+    j.jsonstring=js_cpu
     j.save()
 
     return HttpResponse(s)
 
 
 def testVal2(request):
-    serialised_ec = request.GET.get('serialised_ec')
-    real_e, real_c = blshim.deserialise(serialised_ec)
+    serialised_entry = request.GET.get('serialised_entry')
+    real_e, real_c, sessionid = blshim.deserialise(serialised_entry)
 
     serialised_C = blshim.serialise(real_c)
 
-    print("***********************88")
-    db = CoinValidation.objects.get(commitment=serialised_C)
-    print("!!!!!!!!!!!!!!!!!!!!!!! " + str(db.jsonstring))
+    db = CoinValidation.objects.get(sessionID=sessionid)
+
+    # need to deduct the money from the user's account
+    # and confirm the number of coins requested is the same as that approved earlier 
     blshim.LT_issuer_state.cp, blshim.LT_issuer_state.u, blshim.LT_issuer_state.r1p, blshim.LT_issuer_state.r2p = blshim.deserialise(db.jsonstring)
 
     msg_to_user_crcprp = BLcred.BL_issuer_validation_2(blshim.LT_issuer_state, real_e)
 
+    # updating user's balance
+    u = User.objects.get(username=db.user)
+    u.profile.balance = int(u.profile.balance) - db.num_of_coins
+    u.profile.save()
+
+    # finished with "session" so now delete it
+    db.delete()
+
     s = blshim.serialise(msg_to_user_crcprp)
-    print "msg_to_user_crcprp: " + s
 
     return HttpResponse(s)
+
 
 def testvalidation(request):
     serialised_entry = request.GET.get('entry')

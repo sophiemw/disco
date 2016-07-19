@@ -129,19 +129,20 @@ def homepage(request):
 
 
 @login_required
-def coinsuccess((request), coinnum):
-    print("!!request.user: " + str(request.user))
+def coinsuccess(request):
+    num_of_coins, sessionid = blshim.deserialise(request.GET.get('entry'))
 
-    ignoreresponse = testcoincreation(request, coinnum)
-
-    print("HAPPY: " + str(ignoreresponse))
+    ignoreresponse = testcoincreation(request, num_of_coins, sessionid)
 
     #new_coin = Coins(user=request.user, value_of_coin=coinnum, serialised_code_rnd_tau_gam="testcode")
     #new_coin.save()
 
-    context = {'coinnum': coinnum}
+    context = {'num_of_coins': num_of_coins}
     return render(request, 'wallet/coinsuccess.html', context)
 
+@login_required
+def coinsuccess2(request):
+    return render(request, 'wallet/coinsuccess2.html')
 
 @login_required
 def payment(request, user_getting_money, payment_amount, item_id):
@@ -168,7 +169,12 @@ def coindestroysuccess(request, num_of_coins):
     return render(request, 'wallet/coindestroysuccess.html', context)
 
 
-def testcoincreation(request, coinnum):
+@login_required
+def coindestroysuccess2(request, num_of_coins):
+    return render(request, 'wallet/coindestroysuccess2.html', context)
+
+
+def testcoincreation(request, coinnum, sessionid):
 
 
 
@@ -177,9 +183,9 @@ def testcoincreation(request, coinnum):
 
 #    print("user_commit: " + str(user_commit))
 
-    s_user_commit = blshim.serialise(user_commit)
+    s_entry = blshim.serialise((user_commit, sessionid))
 
-    r = requests.get('http://192.168.33.10:8090/bank/testPrepVal/?serialised_C=%s' %(s_user_commit))
+    r = requests.get('http://192.168.33.10:8090/bank/testPrepVal/?serialised_entry=%s' %(s_entry))
     c = r.content
     #d = json.loads(c)
 
@@ -194,9 +200,9 @@ def testcoincreation(request, coinnum):
 
     # new webservice here
     # sending e
-    s_msg_to_issuer_ec = blshim.serialise((msg_to_issuer_e, user_commit))
+    s_entry = blshim.serialise((msg_to_issuer_e, user_commit, sessionid))
     
-    r = requests.get('http://192.168.33.10:8090/bank/testVal2/?serialised_ec=%s' %(s_msg_to_issuer_ec))
+    r = requests.get('http://192.168.33.10:8090/bank/testVal2/?serialised_entry=%s' %(s_entry))
     c = r.content
 
     msg_to_user_crcprp = blshim.deserialise(c)
