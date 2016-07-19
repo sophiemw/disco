@@ -15,4 +15,10 @@ urlpatterns = [
     url(r'^confirmcoincreation/(?P<num_of_coins>[0-9]+)/$', views.confirmcoincreation, name='confirmcoincreation'),
     url(r'^coindestroy/(?P<num_of_coins>[0-9]+)/$', views.coindestroy, name='coindestroy'),
     url(r'^coindestroysuccess/(?P<num_of_coins>[0-9]+)/$', views.coindestroysuccess, name='coindestroysuccess'),
+    url(r'payuser/$', views.payuser, name='payuser'),
+    #url(r'getVar/$', views.getVar, name='getVar'),
+    url(r'testPrepVal/$', views.testPrepVal, name='testPrepVal'),
+    url(r'testVal2/$', views.testVal2, name='testVal2'),
+    url(r'testvalidation/$', views.testvalidation, name='testvalidation'),
+    
 ]

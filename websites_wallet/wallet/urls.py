@@ -13,4 +13,8 @@ urlpatterns = [
     url(r'coinsuccess/(?P<coinnum>[0-9]+)$', views.coinsuccess, name='coinsuccess'),
     url(r'convertingcoinsbacktomoney/(?P<coinnum>[0-9]+)$', views.convertingcoinsbacktomoney, name='convertingcoinsbacktomoney'),
     url(r'^coindestroysuccess/(?P<num_of_coins>[0-9]+)/$', views.coindestroysuccess, name='coindestroysuccess'),
+	url(r'testcoincreation/$', views.testcoincreation, name='testcoincreation'),
+    url(r'testspending/$', views.testspending, name='testspending'),
+
+    
 ]

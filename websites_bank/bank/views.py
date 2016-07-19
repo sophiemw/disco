@@ -9,7 +9,9 @@ from django.template import RequestContext, loader
 from django import forms
 
 from bank.forms import SignupForm
-from bank.models import UserProfile
+from bank.models import CoinValidation, UserProfile
+
+import blshim, BLcred
 
 def index(request):
 	return render(request, 'bank/index.html')
@@ -196,6 +198,8 @@ def coindestroy(request, num_of_coins):
     }
     return render(request, 'bank/coindestroy.html', context)
 
+
+@login_required
 def coindestroysuccess(request, num_of_coins):
     context = {'num_of_coins': num_of_coins}
     print("!!request.user before: " + str(request.user.profile.balance))
@@ -205,3 +209,73 @@ def coindestroysuccess(request, num_of_coins):
     #return render(request, 'bank/coindestroysuccess.html', context)
     return HttpResponseRedirect('http://192.168.33.10:8000/wallet/coindestroysuccess/' + num_of_coins)
 
+
+
+def payuser(request):
+    amount = request.GET.get('amount')
+    print("SUCCESS")
+
+    merchantacc = User.objects.get(username="merchant")
+    print(merchantacc)
+    print("Balance before: " + str(merchantacc.profile.balance))
+    merchantacc.profile.balance = merchantacc.profile.balance + int(amount)
+    merchantacc.profile.save()
+    print("Balance after: " + str(merchantacc.profile.balance))
+    #put money into merchant account here
+
+    return HttpResponse(True)
+
+
+def testPrepVal(request):
+    # PREPARATION STAGE - BL_issuer_preparation
+    serialised_C = request.GET.get('serialised_C')
+    real_C = blshim.deserialise(serialised_C)
+
+    msg_to_user_rnd = BLcred.BL_issuer_preparation(blshim.LT_issuer_state, real_C)
+    print("msg_to_user_rnd: " + str(msg_to_user_rnd))
+
+    #TODO REMEBER MULTITHREADING 
+
+    # VALIDATION STAGE 1 - BL_issuer_validation
+    msg_to_user_aap = BLcred.BL_issuer_validation(blshim.LT_issuer_state)
+
+    s = blshim.serialise((msg_to_user_rnd, msg_to_user_aap))
+    print s
+
+    js_cpu = blshim.serialise((blshim.LT_issuer_state.cp, blshim.LT_issuer_state.u, blshim.LT_issuer_state.r1p, blshim.LT_issuer_state.r2p))
+    #js_cpu = "HIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"
+    j = CoinValidation(commitment=serialised_C, jsonstring=js_cpu)
+    j.save()
+
+    return HttpResponse(s)
+
+
+def testVal2(request):
+    serialised_ec = request.GET.get('serialised_ec')
+    real_e, real_c = blshim.deserialise(serialised_ec)
+
+    serialised_C = blshim.serialise(real_c)
+
+    print("***********************88")
+    db = CoinValidation.objects.get(commitment=serialised_C)
+    print("!!!!!!!!!!!!!!!!!!!!!!! " + str(db.jsonstring))
+    blshim.LT_issuer_state.cp, blshim.LT_issuer_state.u, blshim.LT_issuer_state.r1p, blshim.LT_issuer_state.r2p = blshim.deserialise(db.jsonstring)
+
+    msg_to_user_crcprp = BLcred.BL_issuer_validation_2(blshim.LT_issuer_state, real_e)
+
+    s = blshim.serialise(msg_to_user_crcprp)
+    print "msg_to_user_crcprp: " + s
+
+    return HttpResponse(s)
+
+def testvalidation(request):
+    serialised_entry = request.GET.get('entry')
+    msg_to_merchant_epmupcoin, desc = blshim.deserialise(serialised_entry)
+
+    valid = blshim.spending_3(msg_to_merchant_epmupcoin, desc)
+
+    # also do double spending checks here
+    # expiry 
+    # update merchant's bank account
+
+    return HttpResponse(blshim.serialise((valid, "24")))

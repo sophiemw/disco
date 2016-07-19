@@ -10,6 +10,10 @@ from django.template import RequestContext
 from wallet.forms import GetCoinForm, SignupForm
 from wallet.models import Coins
 
+import BLcred, blshim
+
+import requests
+
 def index(request):
     return render(request, 'wallet/index.html')
 
@@ -123,8 +127,13 @@ def homepage(request):
     }
     return render(request, 'wallet/homepage.html', context)
 
+
 @login_required
 def coinsuccess(request, coinnum):
+
+    #TODO WEBSERVICE CALL
+
+
     print("!!request.user: " + str(request.user))
     new_coin = Coins(user=request.user, value_of_coin=coinnum, coin_code="testcode")
     new_coin.save()
@@ -156,3 +165,91 @@ def coindestroysuccess(request, num_of_coins):
     request.user.coins_set.filter(value_of_coin=num_of_coins).delete()
     context = {'num_of_coins': num_of_coins}
     return render(request, 'wallet/coindestroysuccess.html', context)
+
+
+def testcoincreation(request):
+
+
+
+    # value, expiry date
+    LT_user_state, user_commit = BLcred.BL_user_setup(blshim.params, [10, 20])
+
+#    print("user_commit: " + str(user_commit))
+
+    s_user_commit = blshim.serialise(user_commit)
+
+    r = requests.get('http://192.168.33.10:8090/bank/testPrepVal/?serialised_C=%s' %(s_user_commit))
+    c = r.content
+    #d = json.loads(c)
+
+    (rnd, aap) = blshim.deserialise(c)
+#    print("rnd: " + str(rnd))
+#    print("aap: " + str(aap))
+
+    BLcred.BL_user_preparation(LT_user_state, rnd)
+
+    msg_to_issuer_e = epsilon = BLcred.BL_user_validation(LT_user_state, (blshim.LT_issuer_state.y, ), aap)
+
+
+    # new webservice here
+    # sending e
+    s_msg_to_issuer_ec = blshim.serialise((msg_to_issuer_e, user_commit))
+    
+    r = requests.get('http://192.168.33.10:8090/bank/testVal2/?serialised_ec=%s' %(s_msg_to_issuer_ec))
+    c = r.content
+
+    msg_to_user_crcprp = blshim.deserialise(c)
+
+    signature = BLcred.BL_user_validation2(LT_user_state, msg_to_user_crcprp)
+
+    ##VALIDATION THAT THE COIN IS VALID
+    b = BLcred.BL_check_signature(blshim.params, (blshim.LT_issuer_state.y, ), signature)
+
+#    print ("{{{{{{{{{{{{{{{{{{{{ " + str(b))
+
+
+
+    # Saving the coin into the DB
+    # signature and coins are different - mu
+    # serialising the stuff to save in the db
+    (m, LT_user_state.zet, LT_user_state.zet1, LT_user_state.zet2, om, omp, ro, ro1p, ro2p, mu) = signature
+
+    coin = (m, LT_user_state.zet, 
+                LT_user_state.zet1, 
+                LT_user_state.zet2, om, omp, ro, ro1p, ro2p)
+
+    serialised_code_rnd_tau_gam = blshim.serialise((coin, rnd, LT_user_state.tau, LT_user_state.gam))
+
+    # actual code that puts it into the db
+    # TODO different user and coin amount
+
+    # user=request.user
+    testuser = User.objects.get(username="test1")
+    c = Coins(user=testuser, value_of_coin=3, serialised_code_rnd_tau_gam=serialised_code_rnd_tau_gam)
+    c.save()
+
+
+
+
+    return HttpResponse("user_commit: " + str(user_commit))
+
+
+def testspending(request):
+
+    serialised_entry = request.GET.get('entry')
+    desc = blshim.deserialise(serialised_entry)
+
+    # user should actually be sent with the webservice (cheating here)
+    # this is where the magic would happen with bundling up the coins to spend them
+    coin_rnd_tau_gam_ser = '[["",{"EcPt:":"A85957R6GVGiMPITNsu0_QOVOFqYAK1psakSKNA="},{"EcPt:":"A_aJ7Xrf4HXgv1q4lu1ZGxQPmTT2XIvDLQ362qA="},{"EcPt:":"Am9mlKHHaLNF2Ls4-4cUkd6O-Ba5wQWnE4jLQlc="},{"Bn:":"ELuHkg9MIUCSg15w9KzW3RCICpStN8zpyH-N5g=="},{"Bn:":"ex2eGlRMom5CDpLV-8UuZSl74ZULqIFaRQxRhQ=="},{"Bn:":"QgvQxhdOpjoFzNN37CxR_2q4d7uaqpYWzaGxwg=="},{"Bn:":"HL7kiLdf4TC3Bxu6EfbzlGH6hDMp_pHD9-cg2A=="},{"Bn:":"m2iX8hh3vEepsFsf-6f69YVrbz7U3Oy-_3EFsQ=="}],[{"Bn:":"vRAZI0jyDBkGFPpRm4kHvqRyJ1IS5L27w3t0Rw=="}],{"Bn:":"idiRz_BcWp8vWBzBpTG21gF05VqFZZR9QQy44g=="},{"Bn:":"gS1AyHSOdoW48RQ3ZCOqxxDMAdbP35KUSA67Lw=="}]'
+    coin, rnd, tau, gam = blshim.deserialise(coin_rnd_tau_gam_ser)
+    # does this user have enough coins in db to buy item
+    # run spending_2 on each coin
+    # return all signed coins at once
+
+
+    # tau, gam, coin, desc
+    msg_to_merchant_epmupcoin = blshim.spending_2(tau, gam, coin, desc)
+
+
+    return HttpResponse(blshim.serialise(msg_to_merchant_epmupcoin))
