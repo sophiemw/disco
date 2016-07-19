@@ -33,12 +33,13 @@ def itemsuccess(request, item_id):
 	if valid:
 		return render(request, 'merchant/itemsuccess.html', {'item': item})
 	else:
-		return HttpResponse("error")
+		return HttpResponse(message)
 
 def spendingGuts():
 	desc = blshim.spending_1()
 	desc_ser = blshim.serialise(desc)
 
+	print("desc: " + desc_ser)
 
 	r = requests.get('http://192.168.33.10:8000/wallet/testspending/?entry=%s' %(desc_ser))
 	c = r.content
@@ -51,6 +52,7 @@ def spendingGuts():
 	entry = blshim.serialise((msg_to_merchant_epmupcoin, desc))
 	r = requests.get('http://192.168.33.10:8090/bank/testvalidation/?entry=%s' %(entry))
 	c = r.content
+
 
 	return blshim.deserialise(c)
 

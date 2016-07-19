@@ -248,7 +248,14 @@ def testspending(request):
 
     # user should actually be sent with the webservice (cheating here)
     # this is where the magic would happen with bundling up the coins to spend them
-    coin_rnd_tau_gam_ser = '[["",{"EcPt:":"A85957R6GVGiMPITNsu0_QOVOFqYAK1psakSKNA="},{"EcPt:":"A_aJ7Xrf4HXgv1q4lu1ZGxQPmTT2XIvDLQ362qA="},{"EcPt:":"Am9mlKHHaLNF2Ls4-4cUkd6O-Ba5wQWnE4jLQlc="},{"Bn:":"ELuHkg9MIUCSg15w9KzW3RCICpStN8zpyH-N5g=="},{"Bn:":"ex2eGlRMom5CDpLV-8UuZSl74ZULqIFaRQxRhQ=="},{"Bn:":"QgvQxhdOpjoFzNN37CxR_2q4d7uaqpYWzaGxwg=="},{"Bn:":"HL7kiLdf4TC3Bxu6EfbzlGH6hDMp_pHD9-cg2A=="},{"Bn:":"m2iX8hh3vEepsFsf-6f69YVrbz7U3Oy-_3EFsQ=="}],[{"Bn:":"vRAZI0jyDBkGFPpRm4kHvqRyJ1IS5L27w3t0Rw=="}],{"Bn:":"idiRz_BcWp8vWBzBpTG21gF05VqFZZR9QQy44g=="},{"Bn:":"gS1AyHSOdoW48RQ3ZCOqxxDMAdbP35KUSA67Lw=="}]'
+    #coin_rnd_tau_gam_ser = '[["",{"EcPt:":"A85957R6GVGiMPITNsu0_QOVOFqYAK1psakSKNA="},{"EcPt:":"A_aJ7Xrf4HXgv1q4lu1ZGxQPmTT2XIvDLQ362qA="},{"EcPt:":"Am9mlKHHaLNF2Ls4-4cUkd6O-Ba5wQWnE4jLQlc="},{"Bn:":"ELuHkg9MIUCSg15w9KzW3RCICpStN8zpyH-N5g=="},{"Bn:":"ex2eGlRMom5CDpLV-8UuZSl74ZULqIFaRQxRhQ=="},{"Bn:":"QgvQxhdOpjoFzNN37CxR_2q4d7uaqpYWzaGxwg=="},{"Bn:":"HL7kiLdf4TC3Bxu6EfbzlGH6hDMp_pHD9-cg2A=="},{"Bn:":"m2iX8hh3vEepsFsf-6f69YVrbz7U3Oy-_3EFsQ=="}],[{"Bn:":"vRAZI0jyDBkGFPpRm4kHvqRyJ1IS5L27w3t0Rw=="}],{"Bn:":"idiRz_BcWp8vWBzBpTG21gF05VqFZZR9QQy44g=="},{"Bn:":"gS1AyHSOdoW48RQ3ZCOqxxDMAdbP35KUSA67Lw=="}]'
+    
+    # get coin from db
+    # TODO DO THIS PROPERLY
+
+    testcoin = Coins.objects.get(value_of_coin=1)
+    coin_rnd_tau_gam_ser = testcoin.serialised_code_rnd_tau_gam
+
     coin, rnd, tau, gam = blshim.deserialise(coin_rnd_tau_gam_ser)
     # does this user have enough coins in db to buy item
     # run spending_2 on each coin

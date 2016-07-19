@@ -47,8 +47,28 @@ class CoinValidation(models.Model):
     commitment = models.TextField()
     jsonstring = models.TextField()
     sessionID = models.TextField()
-    user = models.TextField()
+    username = models.TextField()
     num_of_coins = models.IntegerField()
 
     def __str__(self):
         return self.commitment
+
+
+@python_2_unicode_compatible  # only if you need to support Python 2
+class DoubleSpendingz1Touser(models.Model):
+    z1 = models.TextField()
+    username = models.TextField()
+
+    def __str__(self):
+        return self.username + " " + self.z1 
+
+
+@python_2_unicode_compatible  # only if you need to support Python 2
+class DoubleSpendingCoinHistory(models.Model):
+    coin = models.TextField()
+
+    # epsilonp, mup
+    serialised_entry = models.TextField()
+
+    def __str__(self):
+        return self.coin + "     " + self.serialised_entry

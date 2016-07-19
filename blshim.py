@@ -149,6 +149,7 @@ def spending_1():
 
     # http://stackoverflow.com/questions/415511/how-to-get-current-time-in-python
     datetime2 = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')
+    print("datetime2 " + datetime2)
 
     # https://docs.python.org/2/library/hashlib.html
     #desc = sha256((im, datetime)).hexdigest()
@@ -158,7 +159,7 @@ def spending_1():
 #    Hhex = b"|".join(map(b64encode, Hstr))
 #    desc = Bn.from_binary(sha256(Hhex).digest()) % q
 
-    desc = test_Hash([im, datetime]) % q
+    desc = test_Hash([im, datetime2]) % q
 
     return desc
 
@@ -206,3 +207,53 @@ def spending_3(msg_to_merchant_epmupcoin, desc):
     rhs = Bn.from_binary(sha256(Hhex).digest()) % q
 
     return (lhs == rhs)
+
+
+# see http://www.johannes-bauer.com/compsci/ecc/
+def eea(i, j):
+    assert(isinstance(i, Bn))
+    assert(isinstance(j, Bn))
+    (s, t, u, v) = (Bn(1), Bn(0), Bn(0), Bn(1))
+    while j != 0:
+        #(q, r) = (i // j, i % j)
+        (q, r) = divmod(i, j)
+        (unew, vnew) = (s, t)
+        s = u - (q * s)
+        t = v - (q * t)
+        (i, j) = (j, r)
+        (u, v) = (unew, vnew)
+    (d, m, n) = (i, u, v)
+    return (d, m, n)
+    
+# inverse of i % q
+def inv(i, q):
+    (d, m, n) = eea(q, i)
+    return m
+
+
+def doublespendcalc(epsilonp, mup, epsilonp2, mup2, zet1):
+    # Confirm that we can work out who the guilty party is...
+    # We have (epsilonp, mup) for first validation, and (epsilonp2, mup2) for the second validation
+
+    print("epsilonp:    " + str(epsilonp))
+    print("epsilonp2:   " + str(epsilonp2))
+    print("mup:         " + str(mup))
+    print("mup2:        " + str(mup2))
+    print("zet1:        " + str(zet1))
+
+
+    mupd = (mup2 - mup) % q
+    epsilonpd = (epsilonp - epsilonp2) % q
+    
+    #gamma = (mup2 - mup) / (epsilonp - epsilonp2) # truncation on division- fail
+    gamma = mupd * inv(epsilonpd, q) % q
+    invGamma = epsilonpd * inv(mupd, q) % q
+    reallyOne = gamma * invGamma % q
+#    print "gamma =     " + str(gamma)
+#    print "invGamma =  " + str(invGamma)
+#    print "reallyOne = " + str(reallyOne)
+    
+    z1calc = invGamma * zet1
+#    print "z1      = " + str(z1)
+    print "z1calc  = " + str(serialise(z1calc))
+    return z1calc
