@@ -25,46 +25,71 @@ def itembuying(request, item_id):
 	return render(request, 'merchant/itembuying.html', {'item': item})
 
 
-def itemsuccess(request, item_id):
+def itemsuccess(request):
+	item_id, sessionid = blshim.deserialise(request.GET.get('entry'))
+
 	item = get_object_or_404(Items, pk=item_id)
 
-	valid, message = spendingGuts()
+
+
+	im = "merchantbankaccount"
+	desc = blshim.spending_1(im)
+	serialised_entry = blshim.serialise((desc, sessionid, im))
+
+	r = requests.get('http://192.168.33.10:8000/wallet/testspending/?entry=%s' %(serialised_entry))
+	c = r.content
+
+	valid, error_reason, list_of_msgs = blshim.deserialise(c)
+
+	if valid:
+		# want the validation to happen on the bank side because double spending
+		#print("@@@@@" + str(blshim.spending_3(msg_to_merchant_epmupcoin, desc)))
+
+		# sending all coins to the bank at once
+		entry = blshim.serialise((list_of_msgs, desc))
+		r = requests.get('http://192.168.33.10:8090/bank/testvalidation/?entry=%s' %(entry))
+		c = r.content
+
+		valid, error_reason = blshim.deserialise(c)
 
 	if valid:
 		return render(request, 'merchant/itemsuccess.html', {'item': item})
 	else:
-		return HttpResponse(message)
+		return HttpResponse(error_reason)
 
-def spendingGuts():
-	desc = blshim.spending_1()
-	desc_ser = blshim.serialise(desc)
 
-	print("desc: " + desc_ser)
+def itemsuccess2(request, item_id):
+	item = get_object_or_404(Items, pk=item_id)
+	return render(request, 'merchant/itemsuccess2.html', {'item': item})
 
-	r = requests.get('http://192.168.33.10:8000/wallet/testspending/?entry=%s' %(desc_ser))
+def spendingGuts(sessionid):
+	im = "merchantbankaccount"
+	desc = blshim.spending_1(im)
+	serialised_entry = blshim.serialise((desc, sessionid, im))
+
+#	print("desc: " + serialised_entry)
+
+	r = requests.get('http://192.168.33.10:8000/wallet/testspending/?entry=%s' %(serialised_entry))
 	c = r.content
 
-	msg_to_merchant_epmupcoin = blshim.deserialise(c)
+	valid, error_reason, msg_to_merchant_epmupcoin = blshim.deserialise(c)
 
-	# want the validation to happen on the bank side because double spending
-	#print("@@@@@" + str(blshim.spending_3(msg_to_merchant_epmupcoin, desc)))
+	if valid:
+		# want the validation to happen on the bank side because double spending
+		#print("@@@@@" + str(blshim.spending_3(msg_to_merchant_epmupcoin, desc)))
 
-	entry = blshim.serialise((msg_to_merchant_epmupcoin, desc))
-	r = requests.get('http://192.168.33.10:8090/bank/testvalidation/?entry=%s' %(entry))
-	c = r.content
+		entry = blshim.serialise((msg_to_merchant_epmupcoin, desc))
+		r = requests.get('http://192.168.33.10:8090/bank/testvalidation/?entry=%s' %(entry))
+		c = r.content
 
 
 	return blshim.deserialise(c)
 
-def test_spending_protocol(request):
+#def test_spending_protocol(request):
 	
 
-	validated, errormessage = spendingGuts()
+#	validated, errormessage = spendingGuts()
 
+#	print(errormessage)
 
-#	if validated:
-#		r = requests.get('http://192.168.33.10:8090/bank/payuser/?amount=%i' %(item.price))
-
-	print(errormessage)
-
-	return HttpResponse(validated)
+#	return HttpResponse(validated)

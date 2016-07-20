@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404, render
 from django.template import RequestContext
 
 from wallet.forms import GetCoinForm, SignupForm
-from wallet.models import Coins
+from wallet.models import PaymentSession, Coins
 
 import BLcred, blshim
 
@@ -132,7 +132,9 @@ def homepage(request):
 def coinsuccess(request):
     num_of_coins, sessionid = blshim.deserialise(request.GET.get('entry'))
 
-    ignoreresponse = testcoincreation(request, num_of_coins, sessionid)
+    user = request.user
+
+    ignoreresponse = testcoincreation(request, num_of_coins, sessionid, user)
 
     #new_coin = Coins(user=request.user, value_of_coin=coinnum, serialised_code_rnd_tau_gam="testcode")
     #new_coin.save()
@@ -140,17 +142,34 @@ def coinsuccess(request):
     context = {'num_of_coins': num_of_coins}
     return render(request, 'wallet/coinsuccess.html', context)
 
+
 @login_required
 def coinsuccess2(request):
     return render(request, 'wallet/coinsuccess2.html')
 
+
 @login_required
-def payment(request, user_getting_money, payment_amount, item_id):
-    user_getting_money = get_object_or_404(User, username=user_getting_money)
+def payment(request, payment_amount, item_id):
+
+    sessionid = request.session._session_key
+
+
+    # if sessionid exists already in the db, delete it
+    try:
+        test = PaymentSession.objects.get(sessionID=sessionid)
+        test.delete()
+    except PaymentSession.DoesNotExist:
+        pass
+
+
+    # create a session db to record information about the sale for the validation later
+    p = PaymentSession(sessionID=sessionid, user=request.user, amount=payment_amount)
+    p.save()
+
     context = {
-        'user_getting_money':user_getting_money, 
         'payment_amount':payment_amount, 
-        'item_id':item_id
+        'item_id':item_id,
+        'serialised_entry': blshim.serialise((item_id, sessionid))
     }
     return render(request, 'wallet/payment.html', context)
 
@@ -171,10 +190,11 @@ def coindestroysuccess(request, num_of_coins):
 
 @login_required
 def coindestroysuccess2(request, num_of_coins):
+    context = {'num_of_coins': num_of_coins}
     return render(request, 'wallet/coindestroysuccess2.html', context)
 
 
-def testcoincreation(request, coinnum, sessionid):
+def testcoincreation(request, coinnum, sessionid, user):
 
 
 
@@ -231,8 +251,11 @@ def testcoincreation(request, coinnum, sessionid):
     # TODO different user and coin amount
 
     # user=request.user
-    testuser = User.objects.get(username="test1")
-    c = Coins(user=testuser, value_of_coin=coinnum, serialised_code_rnd_tau_gam=serialised_code_rnd_tau_gam)
+
+   
+
+
+    c = Coins(user=user, value_of_coin=coinnum, serialised_code_rnd_tau_gam=serialised_code_rnd_tau_gam)
     c.save()
 
 
@@ -242,28 +265,96 @@ def testcoincreation(request, coinnum, sessionid):
 
 
 def testspending(request):
-
+    error = False
+    error_reason = ""
+    msg_to_merchant_epmupcoin = [""]
     serialised_entry = request.GET.get('entry')
-    desc = blshim.deserialise(serialised_entry)
+    desc, sessionid, im = blshim.deserialise(serialised_entry)
+
+    ps = PaymentSession.objects.get(sessionID=sessionid)
+    amount = ps.amount
+    user = ps.user
+
+    # TODO make this easier to test
+    list_of_coins = Coins.objects.filter(user=user).order_by('-value_of_coin')
+    print ("list_of_coins: " + str(list_of_coins))
+
+    total_value = 0
+    list_of_suitable_coins = []
+    for c in list_of_coins:
+        total_value += c.value_of_coin
+
+    if total_value < amount:
+        error = True
+        error_reason = "not enough coins to buy item"
+        print(error_reason)
+    if not error:
+        amount_remaining = amount
+        for c in list_of_coins:
+            if c.value_of_coin <= amount_remaining:
+                amount_remaining -= c.value_of_coin
+                list_of_suitable_coins.append(c)
+
+        if amount_remaining == 0:
+            print("GOOD AMOUNT OF COINS")
+            print("coins: "+ str(list_of_suitable_coins))
+        else: 
+            error = True
+            error_reason = "Wrong denominations of coins"
+            print("FAIL")
+
+
 
     # user should actually be sent with the webservice (cheating here)
     # this is where the magic would happen with bundling up the coins to spend them
-    #coin_rnd_tau_gam_ser = '[["",{"EcPt:":"A85957R6GVGiMPITNsu0_QOVOFqYAK1psakSKNA="},{"EcPt:":"A_aJ7Xrf4HXgv1q4lu1ZGxQPmTT2XIvDLQ362qA="},{"EcPt:":"Am9mlKHHaLNF2Ls4-4cUkd6O-Ba5wQWnE4jLQlc="},{"Bn:":"ELuHkg9MIUCSg15w9KzW3RCICpStN8zpyH-N5g=="},{"Bn:":"ex2eGlRMom5CDpLV-8UuZSl74ZULqIFaRQxRhQ=="},{"Bn:":"QgvQxhdOpjoFzNN37CxR_2q4d7uaqpYWzaGxwg=="},{"Bn:":"HL7kiLdf4TC3Bxu6EfbzlGH6hDMp_pHD9-cg2A=="},{"Bn:":"m2iX8hh3vEepsFsf-6f69YVrbz7U3Oy-_3EFsQ=="}],[{"Bn:":"vRAZI0jyDBkGFPpRm4kHvqRyJ1IS5L27w3t0Rw=="}],{"Bn:":"idiRz_BcWp8vWBzBpTG21gF05VqFZZR9QQy44g=="},{"Bn:":"gS1AyHSOdoW48RQ3ZCOqxxDMAdbP35KUSA67Lw=="}]'
     
     # get coin from db
     # TODO DO THIS PROPERLY
 
-    testcoin = Coins.objects.get(value_of_coin=1)
-    coin_rnd_tau_gam_ser = testcoin.serialised_code_rnd_tau_gam
+#    testcoin = Coins.objects.get(value_of_coin=1)
+    if not error:
 
-    coin, rnd, tau, gam = blshim.deserialise(coin_rnd_tau_gam_ser)
-    # does this user have enough coins in db to buy item
-    # run spending_2 on each coin
-    # return all signed coins at once
+        # for each coin, deserialise and run spending 2
+        # put result into a list of messages
+        list_of_msgs = []
+        for c in list_of_suitable_coins:
+            coin_rnd_tau_gam_ser = c.serialised_code_rnd_tau_gam
+            coin, rnd, tau, gam = blshim.deserialise(coin_rnd_tau_gam_ser)
+
+            msg_to_merchant_epmupcoin = blshim.spending_2(tau, gam, coin, desc)
+
+            list_of_msgs.append(msg_to_merchant_epmupcoin)
 
 
-    # tau, gam, coin, desc
-    msg_to_merchant_epmupcoin = blshim.spending_2(tau, gam, coin, desc)
 
 
-    return HttpResponse(blshim.serialise(msg_to_merchant_epmupcoin))
+
+
+
+
+
+
+#        testcoin = list_of_coins[0]
+#        coin_rnd_tau_gam_ser = testcoin.serialised_code_rnd_tau_gam
+
+#        coin, rnd, tau, gam = blshim.deserialise(coin_rnd_tau_gam_ser)
+        # does this user have enough coins in db to buy item
+        # run spending_2 on each coin
+        # return all signed coins at once
+
+
+        # tau, gam, coin, desc
+#        msg_to_merchant_epmupcoin = blshim.spending_2(tau, gam, coin, desc)
+
+
+
+
+        
+
+        if user.username != "doublespender":
+            for c in list_of_suitable_coins:
+                c.delete()
+    # need to delete the session otherwise ps will return multiple objects
+    ps.delete()
+
+    return HttpResponse(blshim.serialise((not error, error_reason, list_of_msgs)))

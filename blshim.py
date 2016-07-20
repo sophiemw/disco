@@ -143,9 +143,9 @@ def test_Hash(params):
     return Bn.from_binary(sha256(Hhex).digest())
 
 
-def spending_1():
+def spending_1(im):
     (G, q, g, h, z, hs) = params
-    im = "merchantaccount details"
+#    im = "merchantaccount details"
 
     # http://stackoverflow.com/questions/415511/how-to-get-current-time-in-python
     datetime2 = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')

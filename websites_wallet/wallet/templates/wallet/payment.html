@@ -5,5 +5,5 @@
 	Amount: <b>{{ payment_amount }}</b> coins<br>
 	?</p>
 
-<a href="http://192.168.33.10:8080/merchant/{{ item_id }}/success"><button type="button">YES</button></a> 
+<a href="http://192.168.33.10:8080/merchant/success/?entry={{ serialised_entry }}"><button type="button">YES</button></a> 
 <a href="http://192.168.33.10:8080/merchant/{{ item_id }}/" target="_parent"><button type="button">NO - take me back</button></a> 
