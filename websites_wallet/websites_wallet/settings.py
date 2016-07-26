@@ -121,3 +121,6 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 LOGIN_URL='/wallet/login/'
+
+CSRF_COOKIE_PATH='/wallet'
+SESSION_COOKIE_PATH='/wallet'

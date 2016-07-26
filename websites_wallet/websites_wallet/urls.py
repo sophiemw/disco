@@ -18,5 +18,5 @@ from django.contrib import admin
 
 urlpatterns = [
 	url(r'^wallet/', include('wallet.urls')),
-    url(r'^admin/', admin.site.urls),
+    url(r'^wallet/admin/', admin.site.urls),
 ]
