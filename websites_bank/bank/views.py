@@ -147,9 +147,6 @@ def coincreation(request, num_of_coins):
 
 @login_required
 def confirmcoincreation(request, num_of_coins):
-    print("!!request.user: " + str(request.user.profile.balance))
-    print("request.session._session_key: " + request.session._session_key)
-
     new_balance = int(request.user.profile.balance) - int(num_of_coins)
 
     if (new_balance) < 0:
@@ -157,14 +154,16 @@ def confirmcoincreation(request, num_of_coins):
     else:
         sessionid = request.session._session_key
 
+        # Remove any old entries that might have been created by defects
+        db = CoinValidation.objects.filter(sessionID=sessionid)
+        db.delete()
+
         j = CoinValidation(sessionID=sessionid, username=request.user.username, num_of_coins=num_of_coins, commitment="", jsonstring="")
         j.save()
         
         entry = blshim.serialise((int(num_of_coins), sessionid))
 
         s = 'http://192.168.33.10:8000/wallet/coinsuccess/?entry=%s' %(entry)
-
-        print ("string: " + s)
 
         return HttpResponseRedirect(s)
 
@@ -209,21 +208,19 @@ def testPrepVal(request):
     serialised_entry = request.GET.get('serialised_entry')
     real_C, sessionid = blshim.deserialise(serialised_entry)
 
-    msg_to_user_rnd = BLcred.BL_issuer_preparation(blshim.LT_issuer_state, real_C)
+    LT_issuer_state = blshim.create_issuer_state()
+
+    msg_to_user_rnd = BLcred.BL_issuer_preparation(LT_issuer_state, real_C)
     print("msg_to_user_rnd: " + str(msg_to_user_rnd))
 
-    #TODO REMEBER MULTITHREADING 
-
     # VALIDATION STAGE 1 - BL_issuer_validation
-    msg_to_user_aap = BLcred.BL_issuer_validation(blshim.LT_issuer_state)
+    msg_to_user_aap = BLcred.BL_issuer_validation(LT_issuer_state)
 
     s = blshim.serialise((msg_to_user_rnd, msg_to_user_aap))
-    print s
 
     # can't easily use sessions - browsers
     serialised_C = blshim.serialise(real_C)
-    js_cpu = blshim.serialise((blshim.LT_issuer_state.cp, blshim.LT_issuer_state.u, blshim.LT_issuer_state.r1p, blshim.LT_issuer_state.r2p))
-    #js_cpu = "HIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"
+    js_cpu = blshim.serialise((LT_issuer_state.cp, LT_issuer_state.u, LT_issuer_state.r1p, LT_issuer_state.r2p))
 
     j = CoinValidation.objects.get(sessionID=sessionid)
 
@@ -231,10 +228,8 @@ def testPrepVal(request):
     j.jsonstring=js_cpu
     j.save()
 
-    ss = DoubleSpendingz1Touser(z1=blshim.serialise(blshim.LT_issuer_state.z1), username=j.username)
+    ss = DoubleSpendingz1Touser(z1=blshim.serialise(LT_issuer_state.z1), username=j.username)
     ss.save()
-
-
 
     return HttpResponse(s)
 
@@ -249,9 +244,12 @@ def testVal2(request):
 
     # need to deduct the money from the user's account
     # and confirm the number of coins requested is the same as that approved earlier 
-    blshim.LT_issuer_state.cp, blshim.LT_issuer_state.u, blshim.LT_issuer_state.r1p, blshim.LT_issuer_state.r2p = blshim.deserialise(db.jsonstring)
 
-    msg_to_user_crcprp = BLcred.BL_issuer_validation_2(blshim.LT_issuer_state, real_e)
+    LT_issuer_state =  blshim.create_issuer_state()
+
+    LT_issuer_state.cp, LT_issuer_state.u, LT_issuer_state.r1p, LT_issuer_state.r2p = blshim.deserialise(db.jsonstring)
+
+    msg_to_user_crcprp = BLcred.BL_issuer_validation_2(LT_issuer_state, real_e)
 
     # updating user's balance
     u = User.objects.get(username=db.username)

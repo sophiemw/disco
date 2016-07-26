@@ -215,7 +215,7 @@ def testcoincreation(request, coinnum, sessionid, user):
 
     BLcred.BL_user_preparation(LT_user_state, rnd)
 
-    msg_to_issuer_e = epsilon = BLcred.BL_user_validation(LT_user_state, (blshim.LT_issuer_state.y, ), aap)
+    msg_to_issuer_e = epsilon = BLcred.BL_user_validation(LT_user_state, (blshim.y, ), aap)
 
 
     # new webservice here
@@ -230,7 +230,7 @@ def testcoincreation(request, coinnum, sessionid, user):
     signature = BLcred.BL_user_validation2(LT_user_state, msg_to_user_crcprp)
 
     ##VALIDATION THAT THE COIN IS VALID
-    b = BLcred.BL_check_signature(blshim.params, (blshim.LT_issuer_state.y, ), signature)
+    b = BLcred.BL_check_signature(blshim.params, (blshim.y, ), signature)
 
 #    print ("{{{{{{{{{{{{{{{{{{{{ " + str(b))
 

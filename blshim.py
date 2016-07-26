@@ -8,7 +8,6 @@ from base64 import b64encode
 
 params = BLcred.BL_setup()
 (G, q, g, h, z, hs) = params
-issuer_state = None
 
 ############################################################################################
 # Helper routines to serialise, deserialise tuples containing EcPt, Bn...
@@ -51,6 +50,16 @@ def deserialise(s):
 # end of serialisation helper routines
 ############################################################################################
 
+def create_issuer_state():
+    state = BLcred.StateHolder()
+    state.params = params
+    state.x = x
+    state.y = y 
+
+    return state
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
 def readIssuerKeys():
     # read the key data from a file
     with open('IssuerKeyFile_public.key', 'r') as f:
@@ -65,21 +74,18 @@ def readIssuerKeys():
         x = None
         pass
 
-
     #global issuer_state
-    state = BLcred.StateHolder()
-    state.params = params
-    state.x = x
-    state.y = y  
-    print "x = " + str(x)
-    print "y = " + str(y)   
+#    state = BLcred.StateHolder()
+#    state.params = params
+#    state.x = x
+#    state.y = y  
+#    print "x = " + str(x)
+#    print "y = " + str(y)   
 
-
-
-    return state
+    return (x, y)
 
 if __name__ != "__main__":    
-    LT_issuer_state = readIssuerKeys()
+    (x, y) = readIssuerKeys()
     
 if __name__ == "__main__":
     print("This is run standalone to create the issuer key files ...")
