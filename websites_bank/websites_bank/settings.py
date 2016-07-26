@@ -124,3 +124,7 @@ LOGIN_URL='/bank/login/'
 
 CSRF_COOKIE_PATH='/bank'
 SESSION_COOKIE_PATH='/bank'
+
+WALLET_URL = 'http://192.168.33.10:8000/wallet'
+MERCHANT_URL = 'http://192.168.33.10:8080/merchant'
+BANK_URL = 'http://192.168.33.10:8090/bank'

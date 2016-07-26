@@ -106,7 +106,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'GMT'
 
 USE_I18N = True
 
@@ -124,3 +124,7 @@ LOGIN_URL='/wallet/login/'
 
 CSRF_COOKIE_PATH='/wallet'
 SESSION_COOKIE_PATH='/wallet'
+
+WALLET_URL = 'http://192.168.33.10:8000/wallet'
+MERCHANT_URL = 'http://192.168.33.10:8080/merchant'
+BANK_URL = 'http://192.168.33.10:8090/bank'

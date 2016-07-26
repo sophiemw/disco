@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth import logout, authenticate, login
 from django.contrib.auth.decorators import login_required
@@ -14,8 +15,10 @@ import BLcred, blshim
 
 import requests
 
+
 def index(request):
     return render(request, 'wallet/index.html')
+
 
 def signup(request):
 	# https://docs.djangoproject.com/en/1.9/topics/forms/
@@ -46,6 +49,7 @@ def signup(request):
         form = SignupForm()
 
     return render(request, 'wallet/signup.html', {'form': form})
+
 
 def userlogin(request):
     # http://stackoverflow.com/questions/16750464/django-redirect-after-login-not-working-next-not-posting
@@ -98,10 +102,12 @@ def userlogin(request):
         # http://stackoverflow.com/questions/21498682/django-csrf-verification-failed-request-aborted-csrf-cookie-not-set
         return render(request, 'wallet/login.html', {'next':next})
 
+
 @login_required
 def userlogout(request):
 	logout(request)
 	return HttpResponseRedirect('/wallet/')
+
 
 @login_required
 def homepage(request):
@@ -112,9 +118,12 @@ def homepage(request):
         if form.is_valid():
             cd = form.cleaned_data
 
-            coinnum = cd.get('coinnum')
+            context = {
+                'coinnum': cd.get('coinnum'),
+                'BANK_URL': settings.BANK_URL
+            }
 
-            return render(request, 'wallet/gettingcoins.html', {'coinnum':coinnum})
+            return render(request, 'wallet/gettingcoins.html', context)
     else:
         form = GetCoinForm()
 
@@ -150,9 +159,7 @@ def coinsuccess2(request):
 
 @login_required
 def payment(request, payment_amount, item_id):
-
     sessionid = request.session._session_key
-
 
     # if sessionid exists already in the db, delete it
     try:
@@ -161,7 +168,6 @@ def payment(request, payment_amount, item_id):
     except PaymentSession.DoesNotExist:
         pass
 
-
     # create a session db to record information about the sale for the validation later
     p = PaymentSession(sessionID=sessionid, user=request.user, amount=payment_amount)
     p.save()
@@ -169,20 +175,24 @@ def payment(request, payment_amount, item_id):
     context = {
         'payment_amount':payment_amount, 
         'item_id':item_id,
-        'serialised_entry': blshim.serialise((item_id, sessionid))
+        'serialised_entry': blshim.serialise((item_id, sessionid)),
+        'MERCHANT_URL': settings.MERCHANT_URL
     }
     return render(request, 'wallet/payment.html', context)
 
 
 @login_required
 def convertingcoinsbacktomoney(request, coinnum):
-    context = {'coinnum': coinnum}
+    context = {
+        'coinnum': coinnum,
+        'BANK_URL': settings.BANK_URL
+    }
     return render(request, 'wallet/convertingcoinsbacktomoney.html', context)
 
 
 @login_required
 def coindestroysuccess(request, num_of_coins):
-    # NEED TO CHANGE THIS TO SOMETHING UNIQUE
+    # TODO NEED TO CHANGE THIS TO SOMETHING UNIQUE
     request.user.coins_set.filter(value_of_coin=num_of_coins).delete()
     context = {'num_of_coins': num_of_coins}
     return render(request, 'wallet/coindestroysuccess.html', context)
@@ -195,9 +205,6 @@ def coindestroysuccess2(request, num_of_coins):
 
 
 def testcoincreation(request, coinnum, sessionid, user):
-
-
-
     # value, expiry date
     LT_user_state, user_commit = BLcred.BL_user_setup(blshim.params, [coinnum, 20])
 
@@ -205,7 +212,7 @@ def testcoincreation(request, coinnum, sessionid, user):
 
     s_entry = blshim.serialise((user_commit, sessionid))
 
-    r = requests.get('http://192.168.33.10:8090/bank/testPrepVal/?serialised_entry=%s' %(s_entry))
+    r = requests.get(settings.BANK_URL + '/testPrepVal/?serialised_entry=%s' %(s_entry))
     c = r.content
     #d = json.loads(c)
 
@@ -222,7 +229,7 @@ def testcoincreation(request, coinnum, sessionid, user):
     # sending e
     s_entry = blshim.serialise((msg_to_issuer_e, user_commit, sessionid))
     
-    r = requests.get('http://192.168.33.10:8090/bank/testVal2/?serialised_entry=%s' %(s_entry))
+    r = requests.get(settings.BANK_URL + '/testVal2/?serialised_entry=%s' %(s_entry))
     c = r.content
 
     msg_to_user_crcprp = blshim.deserialise(c)

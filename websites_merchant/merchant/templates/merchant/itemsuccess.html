@@ -1,6 +1,5 @@
 <script>
 	if (top.location!= self.location) {
-	   top.location = "http://192.168.33.10:8080/merchant/success2/{{ item.id }}";
+	   top.location = "{% url 'merchant:itemsuccess2' item.id %}";
 	}
 </script>
-

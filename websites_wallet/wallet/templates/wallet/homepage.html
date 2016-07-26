@@ -3,20 +3,10 @@
 <h2>Hi {{ user.username }}</h2>
 
 
-
 <form action="{% url 'wallet:homepage' %}" method="POST">{% csrf_token %}
-    {{form.as_p}}
+    {{ form.as_p }}
     <button onclick="myFunction()" type="submit">Submit</button>
 </form>
-
-
-
-
-
-
-
-
-
 
 
 {% if users_coins %}
@@ -31,11 +21,12 @@
 		{% for coin in users_coins %}
 		<tr>
 			<td>{{ coin.value_of_coin }}</td>
-			<td><a href="http://192.168.33.10:8000/wallet/convertingcoinsbacktomoney/{{ coin.value_of_coin }}"><button type="button">Turn back into money</button></a></td>
+			<td><a href="{% url 'wallet:convertingcoinsbacktomoney' coin.value_of_coin %}"><button type="button">Turn back into money</button></a></td>
 		</tr>
 	    {% endfor %}
-
     </table>
 {% else %}
-    <p>Currently you have no coins. Visit bank website to create some</p>
+
+    
+    <p>Currently you have no coins. Create some above.</p>
 {% endif %}

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth import logout, authenticate, login
 from django.contrib.auth.decorators import login_required
@@ -163,7 +164,7 @@ def confirmcoincreation(request, num_of_coins):
         
         entry = blshim.serialise((int(num_of_coins), sessionid))
 
-        s = 'http://192.168.33.10:8000/wallet/coinsuccess/?entry=%s' %(entry)
+        s = settings.WALLET_URL + '/coinsuccess/?entry=%s' %(entry)
 
         return HttpResponseRedirect(s)
 
@@ -184,7 +185,7 @@ def coindestroysuccess(request, num_of_coins):
     request.user.profile.save()
     print("!!request.user after: " + str(request.user.profile.balance))
     #return render(request, 'bank/coindestroysuccess.html', context)
-    return HttpResponseRedirect('http://192.168.33.10:8000/wallet/coindestroysuccess/' + num_of_coins)
+    return HttpResponseRedirect(settings.WALLET_URL + '/coindestroysuccess/' + num_of_coins)
 
 
 
