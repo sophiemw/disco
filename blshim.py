@@ -53,29 +53,50 @@ def deserialise(s):
 
 def readIssuerKeys():
     # read the key data from a file
-    with open('/vagrant/Project/IssuerKeyFile.key', 'r') as f:
+    with open('IssuerKeyFile_public.key', 'r') as f:
         s = f.read()
-    (x, y) = deserialise(s)
+    y = deserialise(s)
+
+    try:
+        with open('IssuerKeyFile_private.key', 'r') as f:
+            s = f.read()
+        x = deserialise(s)
+    except Exception, e:
+        x = None
+        pass
+
+
     #global issuer_state
     state = BLcred.StateHolder()
     state.params = params
     state.x = x
     state.y = y  
     print "x = " + str(x)
-    print "y = " + str(y)    
+    print "y = " + str(y)   
+
+
+
     return state
 
 if __name__ != "__main__":    
     LT_issuer_state = readIssuerKeys()
     
 if __name__ == "__main__":
-    print("This is run standalone to create the issuer key file ...")
+    print("This is run standalone to create the issuer key files ...")
     LT_issuer_state, issuer_pub = BLcred.BL_issuer_keys(params)
-    # write the private, public key to a file
-    serialisation = serialise((LT_issuer_state.x,LT_issuer_state.y))
+    # write the private, public key to files    
+
+    # This should only be run once
+    # Private key should only be in the bank folder - just run this file in the bank
+    # and then copy the public files into the other folders
+    serialisation = serialise(LT_issuer_state.x)
     print "x = " + str(LT_issuer_state.x)
+    with open('IssuerKeyFile_private.key', 'w') as f:
+        f.write(serialisation)
+
+    serialisation = serialise(LT_issuer_state.y)
     print "y = " + str(LT_issuer_state.y)
-    with open('IssuerKeyFile.key', 'w') as f:
+    with open('IssuerKeyFile_public.key', 'w') as f:
         f.write(serialisation)
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------
