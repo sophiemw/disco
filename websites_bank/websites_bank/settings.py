@@ -121,3 +121,6 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 LOGIN_URL='/bank/login/'
+
+CSRF_COOKIE_PATH='/bank'
+SESSION_COOKIE_PATH='/bank'

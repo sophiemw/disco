@@ -10,7 +10,7 @@ from django.utils.encoding import python_2_unicode_compatible
 @python_2_unicode_compatible  # only if you need to support Python 2
 class Coins(models.Model):
 	user = models.ForeignKey(User, on_delete=models.CASCADE)
-	value_of_coin = models.IntegerField(validators=[validators.MinValueValidator('0')])
+	value_of_coin = models.IntegerField(validators=[validators.MinValueValidator(0)])
 	#coin_code = models.CharField(max_length=500, )
 	serialised_code_rnd_tau_gam = models.CharField(max_length=500, )
 
@@ -19,3 +19,16 @@ class Coins(models.Model):
 			str(self.user.username),
 			str(self.value_of_coin)
 		])
+
+
+@python_2_unicode_compatible  # only if you need to support Python 2
+class PaymentSession(models.Model):
+	sessionID = models.TextField()
+	user = models.ForeignKey(User, on_delete=models.CASCADE)
+	amount = models.IntegerField()
+
+	def __str__(self):
+		return self.user.username + " " + str(self.amount)
+
+
+# TODO list of users who have double spent

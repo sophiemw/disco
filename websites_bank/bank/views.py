@@ -9,7 +9,7 @@ from django.template import RequestContext, loader
 from django import forms
 
 from bank.forms import SignupForm
-from bank.models import CoinValidation, UserProfile
+from bank.models import DoubleSpendingCoinHistory, DoubleSpendingz1Touser, CoinValidation, UserProfile
 
 import blshim, BLcred
 
@@ -157,7 +157,7 @@ def confirmcoincreation(request, num_of_coins):
     else:
         sessionid = request.session._session_key
 
-        j = CoinValidation(sessionID=sessionid, user=request.user.username, num_of_coins=num_of_coins, commitment="", jsonstring="")
+        j = CoinValidation(sessionID=sessionid, username=request.user.username, num_of_coins=num_of_coins, commitment="", jsonstring="")
         j.save()
         
         entry = blshim.serialise((int(num_of_coins), sessionid))
@@ -231,6 +231,11 @@ def testPrepVal(request):
     j.jsonstring=js_cpu
     j.save()
 
+    ss = DoubleSpendingz1Touser(z1=blshim.serialise(blshim.LT_issuer_state.z1), username=j.username)
+    ss.save()
+
+
+
     return HttpResponse(s)
 
 
@@ -249,7 +254,7 @@ def testVal2(request):
     msg_to_user_crcprp = BLcred.BL_issuer_validation_2(blshim.LT_issuer_state, real_e)
 
     # updating user's balance
-    u = User.objects.get(username=db.user)
+    u = User.objects.get(username=db.username)
     u.profile.balance = int(u.profile.balance) - db.num_of_coins
     u.profile.save()
 
@@ -262,15 +267,71 @@ def testVal2(request):
 
 
 def testvalidation(request):
+    valid = True
+    error_reason = ""
+    list_of_coins_to_put_in_db = []
+
     serialised_entry = request.GET.get('entry')
-    msg_to_merchant_epmupcoin, desc = blshim.deserialise(serialised_entry)
+    list_of_msgs, desc = blshim.deserialise(serialised_entry)
 
-    valid = blshim.spending_3(msg_to_merchant_epmupcoin, desc)
+    #serialiser converts lists to tuples by default
+    list_of_msgs = list(list_of_msgs)
 
-    # also do double spending checks here
-    # expiry 
+    for msg_to_merchant_epmupcoin in list_of_msgs:
+
+        valid_3 = blshim.spending_3(msg_to_merchant_epmupcoin, desc)
+
+        if valid_3:
+
+            # double spending checks here
+            (epsilonp, mup, coin) = msg_to_merchant_epmupcoin
+            serialise_coin = blshim.serialise(coin)
+
+            try:
+                check = DoubleSpendingCoinHistory.objects.get(coin=serialise_coin)
+                # now need to extract values saved in it to work out who is spending the coin
+                # MATHS
+                (epsilonp2, mup2) = blshim.deserialise(check.serialised_entry)
+
+                (m, zet, zet1, zet2, om, omp, ro, ro1p, ro2p) = coin
+
+                z1calc = blshim.doublespendcalc(epsilonp, mup, epsilonp2, mup2, zet1)
+         
+                z1calc_s = blshim.serialise(z1calc)
+
+                # now we look z1calc in DoubleSpendingz1Touser to find the user..
+
+                guilty_user = DoubleSpendingz1Touser.objects.get(z1=blshim.serialise(z1calc))
+                print("@@@@@@@guilty_user: " + guilty_user.username)
+
+                # TODO consquences of naughty db & not let spending happen
+                #return HttpResponse(blshim.serialise((False, "DOUBLE SPENDING"))) 
+#               valid = not (valid or False)
+                valid = False
+                error_reason = "DOUBLE SPENDING"
+            except DoubleSpendingCoinHistory.DoesNotExist:
+                # good - because then there is no double spending
+                # add coin to db here
+
+                serialised_entry = blshim.serialise((epsilonp, mup))
+
+                list_of_coins_to_put_in_db.append((serialise_coin, serialised_entry))
+
+        else:
+            valid = False
+            error_reason = "Coin not a valid coin"
+
+
+    # need ALL coins to be valid for them to be put the in spent db
+    if valid:
+        for c in list_of_coins_to_put_in_db:
+            serialise_coin, serialised_entry = c
+            dc = DoubleSpendingCoinHistory(coin=serialise_coin, serialised_entry=serialised_entry)
+            dc.save()
+
+    # also do expiry 
     # update merchant's bank account
 
     # TODO payuser()
 
-    return HttpResponse(blshim.serialise((valid, "24")))
+    return HttpResponse(blshim.serialise((valid, error_reason)))
