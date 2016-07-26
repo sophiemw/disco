@@ -312,11 +312,12 @@ def testspending(request):
     # TODO DO THIS PROPERLY
 
 #    testcoin = Coins.objects.get(value_of_coin=1)
+    list_of_msgs = []
     if not error:
 
         # for each coin, deserialise and run spending 2
         # put result into a list of messages
-        list_of_msgs = []
+        
         for c in list_of_suitable_coins:
             coin_rnd_tau_gam_ser = c.serialised_code_rnd_tau_gam
             coin, rnd, tau, gam = blshim.deserialise(coin_rnd_tau_gam_ser)
