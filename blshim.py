@@ -222,7 +222,7 @@ def spending_3(msg_to_merchant_epmupcoin, desc):
 
     lhs = (om + omp) % q
     rhs_h = [zet, zet1, 
-            ro * g + om * LT_issuer_state.y,
+            ro * g + om * y,
             ro1p * g + omp * zet1,
             ro2p * h + omp * zet2, ## problem
             mup * z + epsilonp * zet]
@@ -262,12 +262,11 @@ def doublespendcalc(epsilonp, mup, epsilonp2, mup2, zet1):
     # Confirm that we can work out who the guilty party is...
     # We have (epsilonp, mup) for first validation, and (epsilonp2, mup2) for the second validation
 
-    print("epsilonp:    " + str(epsilonp))
-    print("epsilonp2:   " + str(epsilonp2))
-    print("mup:         " + str(mup))
-    print("mup2:        " + str(mup2))
-    print("zet1:        " + str(zet1))
-
+#    print("epsilonp:    " + str(epsilonp))
+#    print("epsilonp2:   " + str(epsilonp2))
+#    print("mup:         " + str(mup))
+#    print("mup2:        " + str(mup2))
+#    print("zet1:        " + str(zet1))
 
     mupd = (mup2 - mup) % q
     epsilonpd = (epsilonp - epsilonp2) % q
@@ -282,5 +281,5 @@ def doublespendcalc(epsilonp, mup, epsilonp2, mup2, zet1):
     
     z1calc = invGamma * zet1
 #    print "z1      = " + str(z1)
-    print "z1calc  = " + str(serialise(z1calc))
+#    print "z1calc  = " + str(serialise(z1calc))
     return z1calc

@@ -9,7 +9,7 @@ from django.template import RequestContext, loader
 from django import forms
 
 from bank.forms import SignupForm
-from bank.models import DoubleSpendingCoinHistory, DoubleSpendingz1Touser, CoinValidation, UserProfile
+from bank.models import UsersWhoHaveDoubleSpent, DoubleSpendingCoinHistory, DoubleSpendingz1Touser, CoinValidation, UserProfile
 
 import blshim, BLcred
 
@@ -158,7 +158,7 @@ def confirmcoincreation(request, num_of_coins):
         db = CoinValidation.objects.filter(sessionID=sessionid)
         db.delete()
 
-        j = CoinValidation(sessionID=sessionid, username=request.user.username, num_of_coins=num_of_coins, commitment="", jsonstring="")
+        j = CoinValidation(sessionID=sessionid, user=request.user, num_of_coins=num_of_coins, commitment="", jsonstring="")
         j.save()
         
         entry = blshim.serialise((int(num_of_coins), sessionid))
@@ -228,7 +228,7 @@ def testPrepVal(request):
     j.jsonstring=js_cpu
     j.save()
 
-    ss = DoubleSpendingz1Touser(z1=blshim.serialise(LT_issuer_state.z1), username=j.username)
+    ss = DoubleSpendingz1Touser(z1=blshim.serialise(LT_issuer_state.z1), user=j.user)
     ss.save()
 
     return HttpResponse(s)
@@ -252,7 +252,7 @@ def testVal2(request):
     msg_to_user_crcprp = BLcred.BL_issuer_validation_2(LT_issuer_state, real_e)
 
     # updating user's balance
-    u = User.objects.get(username=db.username)
+    u = db.user
     u.profile.balance = int(u.profile.balance) - db.num_of_coins
     u.profile.save()
 
@@ -298,19 +298,19 @@ def testvalidation(request):
                 z1calc_s = blshim.serialise(z1calc)
 
                 # now we look z1calc in DoubleSpendingz1Touser to find the user..
-
                 guilty_user = DoubleSpendingz1Touser.objects.get(z1=blshim.serialise(z1calc))
-                print("@@@@@@@guilty_user: " + guilty_user.username)
+#                print("@@@@@@@guilty_user: " + guilty_user.user.username)
 
-                # TODO consquences of naughty db & not let spending happen
-                #return HttpResponse(blshim.serialise((False, "DOUBLE SPENDING"))) 
+                # Add guilty user to a list of all users who have double spent
+                n = UsersWhoHaveDoubleSpent(user=guilty_user.user, coin=serialise_coin, serialised_entry=check.serialised_entry)
+                n.save()
+
 #               valid = not (valid or False)
                 valid = False
                 error_reason = "DOUBLE SPENDING"
             except DoubleSpendingCoinHistory.DoesNotExist:
                 # good - because then there is no double spending
                 # add coin to db here
-
                 serialised_entry = blshim.serialise((epsilonp, mup))
 
                 list_of_coins_to_put_in_db.append((serialise_coin, serialised_entry))

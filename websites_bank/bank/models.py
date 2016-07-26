@@ -47,7 +47,7 @@ class CoinValidation(models.Model):
     commitment = models.TextField()
     jsonstring = models.TextField()
     sessionID = models.TextField()
-    username = models.TextField()
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     num_of_coins = models.IntegerField()
 
     def __str__(self):
@@ -57,10 +57,10 @@ class CoinValidation(models.Model):
 @python_2_unicode_compatible  # only if you need to support Python 2
 class DoubleSpendingz1Touser(models.Model):
     z1 = models.TextField()
-    username = models.TextField()
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.username + " " + self.z1 
+        return self.user.username + " " + self.z1 
 
 
 @python_2_unicode_compatible  # only if you need to support Python 2
@@ -72,3 +72,20 @@ class DoubleSpendingCoinHistory(models.Model):
 
     def __str__(self):
         return self.coin + "     " + self.serialised_entry
+
+
+@python_2_unicode_compatible  # only if you need to support Python 2
+class UsersWhoHaveDoubleSpent(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    time = models.DateTimeField(auto_now=True)
+    coin = models.TextField()
+
+    # epsilonp, mup
+    serialised_entry = models.TextField()
+
+    def __str__(self):
+        return ' '.join([
+            self.user.username,
+            str(self.time),
+            self.coin
+        ])
