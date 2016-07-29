@@ -13,7 +13,7 @@ from wallet.models import PaymentSession, Coins
 
 import BLcred, blshim
 
-import requests
+import requests, datetime
 
 
 def index(request):
@@ -141,15 +141,9 @@ def homepage(request):
 def coinsuccess(request):
     num_of_coins, sessionid = blshim.deserialise(request.GET.get('entry'))
 
-    user = request.user
+    ignoreresponse = testcoincreation(request, num_of_coins, sessionid, request.user)
 
-    ignoreresponse = testcoincreation(request, num_of_coins, sessionid, user)
-
-    #new_coin = Coins(user=request.user, value_of_coin=coinnum, serialised_code_rnd_tau_gam="testcode")
-    #new_coin.save()
-
-    context = {'num_of_coins': num_of_coins}
-    return render(request, 'wallet/coinsuccess.html', context)
+    return render(request, 'wallet/coinsuccess.html', {'num_of_coins': num_of_coins})
 
 
 @login_required
@@ -205,25 +199,26 @@ def coindestroysuccess2(request, num_of_coins):
 
 
 def testcoincreation(request, coinnum, sessionid, user):
+    # http://www.saltycrane.com/blog/2008/06/how-to-get-current-date-and-time-in/
+    now = datetime.datetime.now() 
+    expirydate = now.year + 2
+
+    if user.username == "expiredspender":
+        expirydate = now.year - 2
+
     # value, expiry date
-    LT_user_state, user_commit = BLcred.BL_user_setup(blshim.params, [coinnum, 20])
+    LT_user_state, user_commit = BLcred.BL_user_setup(blshim.params, [coinnum, expirydate])
 
-#    print("user_commit: " + str(user_commit))
-
-    s_entry = blshim.serialise((user_commit, sessionid))
+    s_entry = blshim.serialise((user_commit, sessionid, coinnum, expirydate))
 
     r = requests.get(settings.BANK_URL + '/testPrepVal/?serialised_entry=%s' %(s_entry))
     c = r.content
-    #d = json.loads(c)
 
     (rnd, aap) = blshim.deserialise(c)
-#    print("rnd: " + str(rnd))
-#    print("aap: " + str(aap))
 
     BLcred.BL_user_preparation(LT_user_state, rnd)
 
     msg_to_issuer_e = epsilon = BLcred.BL_user_validation(LT_user_state, (blshim.y, ), aap)
-
 
     # new webservice here
     # sending e
@@ -239,10 +234,6 @@ def testcoincreation(request, coinnum, sessionid, user):
     ##VALIDATION THAT THE COIN IS VALID
     b = BLcred.BL_check_signature(blshim.params, (blshim.y, ), signature)
 
-#    print ("{{{{{{{{{{{{{{{{{{{{ " + str(b))
-
-
-
     # Saving the coin into the DB
     # signature and coins are different - mu
     # serialising the stuff to save in the db
@@ -252,21 +243,10 @@ def testcoincreation(request, coinnum, sessionid, user):
                 LT_user_state.zet1, 
                 LT_user_state.zet2, om, omp, ro, ro1p, ro2p)
 
-    serialised_code_rnd_tau_gam = blshim.serialise((coin, rnd, LT_user_state.tau, LT_user_state.gam))
+    serialised_code_rnd_tau_gam_R_att = blshim.serialise((coin, rnd, LT_user_state.tau, LT_user_state.gam, LT_user_state.R, LT_user_state.attributes))
 
-    # actual code that puts it into the db
-    # TODO different user and coin amount
-
-    # user=request.user
-
-   
-
-
-    c = Coins(user=user, value_of_coin=coinnum, serialised_code_rnd_tau_gam=serialised_code_rnd_tau_gam)
+    c = Coins(user=user, value_of_coin=coinnum, serialised_code_rnd_tau_gam_R_att=serialised_code_rnd_tau_gam_R_att, expirydate=expirydate)
     c.save()
-
-
-
 
     return HttpResponse("user_commit: " + str(user_commit))
 
@@ -284,7 +264,6 @@ def testspending(request):
 
     # TODO make this easier to test
     list_of_coins = Coins.objects.filter(user=user).order_by('-value_of_coin')
-    print ("list_of_coins: " + str(list_of_coins))
 
     total_value = 0
     list_of_suitable_coins = []
@@ -310,59 +289,37 @@ def testspending(request):
             error_reason = "Wrong denominations of coins"
             print("FAIL")
 
-
-
     # user should actually be sent with the webservice (cheating here)
     # this is where the magic would happen with bundling up the coins to spend them
     
-    # get coin from db
-    # TODO DO THIS PROPERLY
-
-#    testcoin = Coins.objects.get(value_of_coin=1)
     list_of_msgs = []
     if not error:
-
         # for each coin, deserialise and run spending 2
-        # put result into a list of messages
-        
+        # put result into a list of messages      
         for c in list_of_suitable_coins:
-            coin_rnd_tau_gam_ser = c.serialised_code_rnd_tau_gam
-            coin, rnd, tau, gam = blshim.deserialise(coin_rnd_tau_gam_ser)
+            if user.username == "wrongvaluespender":
+                c.value_of_coin += 1
 
+            code_rnd_tau_gam_R_att = c.serialised_code_rnd_tau_gam_R_att
+            coin, rnd, tau, gam, R, att = blshim.deserialise(code_rnd_tau_gam_R_att)
+            # run spending_2 on each coin
             msg_to_merchant_epmupcoin = blshim.spending_2(tau, gam, coin, desc)
 
-            list_of_msgs.append(msg_to_merchant_epmupcoin)
+            (m, zet, zet1, zet2, om, omp, ro, ro1p, ro2p) = coin
 
+            # table 8, revealing attributes for each coin
+            # first check each coin is the value it says it is
+            amount_rev_values = blshim.rev_attribute_1("amount", gam, zet, zet1, rnd, R, att)
 
+            # now check the coin is within its expiry date
+            expiry_rev_values = blshim.rev_attribute_1("expirydate", gam, zet, zet1, rnd, R, att)
 
-
-
-
-
-
-
-
-#        testcoin = list_of_coins[0]
-#        coin_rnd_tau_gam_ser = testcoin.serialised_code_rnd_tau_gam
-
-#        coin, rnd, tau, gam = blshim.deserialise(coin_rnd_tau_gam_ser)
-        # does this user have enough coins in db to buy item
-        # run spending_2 on each coin
-        # return all signed coins at once
-
-
-        # tau, gam, coin, desc
-#        msg_to_merchant_epmupcoin = blshim.spending_2(tau, gam, coin, desc)
-
-
-
-
-        
+            list_of_msgs.append((msg_to_merchant_epmupcoin, amount_rev_values, expiry_rev_values, c.value_of_coin, c.expirydate))
 
         if user.username != "doublespender":
             for c in list_of_suitable_coins:
                 c.delete()
     # need to delete the session otherwise ps will return multiple objects
     ps.delete()
-
+    # return all signed coins at once        
     return HttpResponse(blshim.serialise((not error, error_reason, list_of_msgs)))

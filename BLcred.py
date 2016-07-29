@@ -435,6 +435,12 @@ def test_protocol():
     
     print(rhs == lhs)
 
+
+
+
+
+
+
 ########################################################################################
 ########################################################################################   
 
@@ -512,7 +518,8 @@ def spending_3(msg_to_merchant_epmupcoin, params, issuer_pub):
 
     return (lhs == rhs)
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
+def temp():
         # Establish the global parameters
     params = BL_setup()
 
@@ -547,4 +554,7 @@ if __name__ == "__main__":
     desc = spending_1(params)
     msg_to_merchant_epmupcoin = spending_2(LT_user_state, coin, desc, params)
     print(spending_3(msg_to_merchant_epmupcoin, params, issuer_pub))
+
+if __name__ == "__main__":
+    test_protocol()
 

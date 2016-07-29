@@ -14,6 +14,8 @@ from bank.models import UsersWhoHaveDoubleSpent, DoubleSpendingCoinHistory, Doub
 
 import blshim, BLcred
 
+import datetime
+
 def index(request):
 	return render(request, 'bank/index.html')
 
@@ -207,7 +209,7 @@ def payuser(request):
 def testPrepVal(request):
     # PREPARATION STAGE - BL_issuer_preparation
     serialised_entry = request.GET.get('serialised_entry')
-    real_C, sessionid = blshim.deserialise(serialised_entry)
+    real_C, sessionid, value_of_coin, expirydate = blshim.deserialise(serialised_entry)
 
     LT_issuer_state = blshim.create_issuer_state()
 
@@ -229,7 +231,7 @@ def testPrepVal(request):
     j.jsonstring=js_cpu
     j.save()
 
-    ss = DoubleSpendingz1Touser(z1=blshim.serialise(LT_issuer_state.z1), user=j.user)
+    ss = DoubleSpendingz1Touser(z1=blshim.serialise(LT_issuer_state.z1), user=j.user, expirydate=expirydate, value_of_coin=value_of_coin)
     ss.save()
 
     return HttpResponse(s)
@@ -276,12 +278,12 @@ def testvalidation(request):
     #serialiser converts lists to tuples by default
     list_of_msgs = list(list_of_msgs)
 
-    for msg_to_merchant_epmupcoin in list_of_msgs:
+    for coin_with_reveals in list_of_msgs:
+        msg_to_merchant_epmupcoin, amount_rev_values, expiry_rev_values, value_of_coin, expirydate = coin_with_reveals
 
         valid_3 = blshim.spending_3(msg_to_merchant_epmupcoin, desc)
 
         if valid_3:
-
             # double spending checks here
             (epsilonp, mup, coin) = msg_to_merchant_epmupcoin
             serialise_coin = blshim.serialise(coin)
@@ -294,13 +296,11 @@ def testvalidation(request):
 
                 (m, zet, zet1, zet2, om, omp, ro, ro1p, ro2p) = coin
 
-                z1calc = blshim.doublespendcalc(epsilonp, mup, epsilonp2, mup2, zet1)
-         
+                z1calc = blshim.doublespendcalc(epsilonp, mup, epsilonp2, mup2, zet1)         
                 z1calc_s = blshim.serialise(z1calc)
 
                 # now we look z1calc in DoubleSpendingz1Touser to find the user..
                 guilty_user = DoubleSpendingz1Touser.objects.get(z1=blshim.serialise(z1calc))
-#                print("@@@@@@@guilty_user: " + guilty_user.user.username)
 
                 # Add guilty user to a list of all users who have double spent
                 n = UsersWhoHaveDoubleSpent(user=guilty_user.user, coin=serialise_coin, serialised_entry=check.serialised_entry)
@@ -316,6 +316,26 @@ def testvalidation(request):
 
                 list_of_coins_to_put_in_db.append((serialise_coin, serialised_entry))
 
+                # check coin's attributes - value, expiry date
+                coin_value_valid, Lj_value = blshim.rev_attribute_2(amount_rev_values)
+                print ("value: " + str(coin_value_valid))
+                coin_expiry_valid, Lj_expirydate = blshim.rev_attribute_2(expiry_rev_values)
+                print ("expiry: " + str(coin_expiry_valid))
+
+                if coin_value_valid:
+                    valid = Lj_value == value_of_coin
+                    if valid and coin_expiry_valid:
+                        # http://www.saltycrane.com/blog/2008/06/how-to-get-current-date-and-time-in/
+                        now = datetime.datetime.now() 
+                        valid = (Lj_expirydate == expirydate) and (expirydate > now.year)
+                        if not valid: error_reason = "Coin expired"
+                    else:
+                        valid = False
+                        error_reason = "Coin not valid"
+                else:
+                    valid = False
+                    error_reason = "Coins values are different"
+
         else:
             valid = False
             error_reason = "Coin not a valid coin"
@@ -328,9 +348,7 @@ def testvalidation(request):
             dc = DoubleSpendingCoinHistory(coin=serialise_coin, serialised_entry=serialised_entry)
             dc.save()
 
-    # also do expiry 
     # update merchant's bank account
-
     # TODO payuser()
 
     return HttpResponse(blshim.serialise((valid, error_reason)))

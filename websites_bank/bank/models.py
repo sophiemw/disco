@@ -58,6 +58,8 @@ class CoinValidation(models.Model):
 class DoubleSpendingz1Touser(models.Model):
     z1 = models.TextField()
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    value_of_coin = models.IntegerField()
+    expirydate = models.IntegerField()
 
     def __str__(self):
         return self.user.username + " " + self.z1 
