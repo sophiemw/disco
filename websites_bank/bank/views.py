@@ -182,28 +182,13 @@ def coindestroy(request, num_of_coins, coinpk):
 
 @login_required
 def coindestroysuccess(request, num_of_coins, coinpk):
-    context = {'num_of_coins': num_of_coins}
+#    context = {'num_of_coins': num_of_coins}
     print("!!request.user before: " + str(request.user.profile.balance))
     request.user.profile.balance = request.user.profile.balance + int(num_of_coins)
     request.user.profile.save()
     print("!!request.user after: " + str(request.user.profile.balance))
     #return render(request, 'bank/coindestroysuccess.html', context)
     return HttpResponseRedirect(settings.WALLET_URL + '/coindestroysuccess/' + num_of_coins + "/" + coinpk)
-
-
-def payuser(request):
-    amount = request.GET.get('amount')
-    print("SUCCESS")
-
-    merchantacc = User.objects.get(username="merchant")
-    print(merchantacc)
-    print("Balance before: " + str(merchantacc.profile.balance))
-    merchantacc.profile.balance = merchantacc.profile.balance + int(amount)
-    merchantacc.profile.save()
-    print("Balance after: " + str(merchantacc.profile.balance))
-    #put money into merchant account here
-
-    return HttpResponse(True)
 
 
 def testPrepVal(request):
@@ -243,7 +228,6 @@ def testPrepVal(request):
         return HttpResponse(s)
 
 
-
 def testVal2(request):
     serialised_entry = request.GET.get('serialised_entry')
     real_e, real_c, sessionid = blshim.deserialise(serialised_entry)
@@ -280,7 +264,7 @@ def testvalidation(request):
     list_of_coins_to_put_in_db = []
 
     serialised_entry = request.GET.get('entry')
-    list_of_msgs, desc = blshim.deserialise(serialised_entry)
+    list_of_msgs, desc, im, amount = blshim.deserialise(serialised_entry)
 
     #serialiser converts lists to tuples by default
     list_of_msgs = list(list_of_msgs)
@@ -347,7 +331,6 @@ def testvalidation(request):
             valid = False
             error_reason = "Coin not a valid coin"
 
-
     # need ALL coins to be valid for them to be put the in spent db
     if valid:
         for c in list_of_coins_to_put_in_db:
@@ -356,6 +339,8 @@ def testvalidation(request):
             dc.save()
 
     # update merchant's bank account
-    # TODO payuser()
+    merchantacc = User.objects.get(username=im)
+    merchantacc.profile.balance = merchantacc.profile.balance + int(amount)
+    merchantacc.profile.save()
 
     return HttpResponse(blshim.serialise((valid, error_reason)))

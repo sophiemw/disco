@@ -49,7 +49,7 @@ def itemsuccess(request):
 		# want the validation to happen on the bank side because double spending
 
 		# sending all coins to the bank at once
-		entry = blshim.serialise((list_of_msgs, desc))
+		entry = blshim.serialise((list_of_msgs, desc, im, item.price))
 		r = requests.get(settings.BANK_URL + '/testvalidation/?entry=%s' %(entry))
 		c = r.content
  
