@@ -435,6 +435,52 @@ def test_protocol():
     
     print(rhs == lhs)
 
+
+ #@@@@@@@@@@@@@@@@@@@@@@@@@
+
+    # proof of knowledge pi
+    # recall that user's C
+    # C = R * hs[0] + L1 * hs[1] + L2 * hs[2]
+
+    # wallet side
+    Cp = R * hs[0]
+    rnd = q.random()
+    a = rnd * hs[0]
+    c_wallet = test_Hash( [a, hs[0], Cp] )
+    r = rnd + R * c_wallet
+
+    # send over c_wallet, r, a, C, Cp, L1, L2
+
+    # bank side
+    c_bank = test_Hash( [a, hs[0], Cp] )
+    assert c_wallet == c_bank
+
+    lhs1 = r * hs[0]
+    rhs1 = c_bank * Cp + a
+
+    lhs2 = C
+    rhs2 = Cp + L1 * hs[1] + L2 * hs[2]
+    print "test"
+
+    print ("lhs1: " + str(lhs1))
+    print ("rhs1: " + str(rhs1))
+    print
+
+    print ("lhs2: " + str(lhs2))
+    print ("rhs2: " + str(rhs2))
+    print
+
+    print (lhs1 == rhs1) and (lhs2 == rhs2)
+
+
+
+
+
+
+
+
+
+
 ########################################################################################
 ########################################################################################   
 
@@ -512,7 +558,8 @@ def spending_3(msg_to_merchant_epmupcoin, params, issuer_pub):
 
     return (lhs == rhs)
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
+def temp():
         # Establish the global parameters
     params = BL_setup()
 
@@ -547,4 +594,7 @@ if __name__ == "__main__":
     desc = spending_1(params)
     msg_to_merchant_epmupcoin = spending_2(LT_user_state, coin, desc, params)
     print(spending_3(msg_to_merchant_epmupcoin, params, issuer_pub))
+
+if __name__ == "__main__":
+    test_protocol()
 

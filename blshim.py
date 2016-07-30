@@ -8,7 +8,6 @@ from base64 import b64encode
 
 params = BLcred.BL_setup()
 (G, q, g, h, z, hs) = params
-issuer_state = None
 
 ############################################################################################
 # Helper routines to serialise, deserialise tuples containing EcPt, Bn...
@@ -51,31 +50,59 @@ def deserialise(s):
 # end of serialisation helper routines
 ############################################################################################
 
-def readIssuerKeys():
-    # read the key data from a file
-    with open('/vagrant/Project/IssuerKeyFile.key', 'r') as f:
-        s = f.read()
-    (x, y) = deserialise(s)
-    #global issuer_state
+def create_issuer_state():
     state = BLcred.StateHolder()
     state.params = params
     state.x = x
-    state.y = y  
-    print "x = " + str(x)
-    print "y = " + str(y)    
+    state.y = y 
+
     return state
 
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+def readIssuerKeys():
+    # read the key data from a file
+    with open('IssuerKeyFile_public.key', 'r') as f:
+        s = f.read()
+    y = deserialise(s)
+
+    try:
+        with open('IssuerKeyFile_private.key', 'r') as f:
+            s = f.read()
+        x = deserialise(s)
+    except Exception, e:
+        x = None
+        pass
+
+    #global issuer_state
+#    state = BLcred.StateHolder()
+#    state.params = params
+#    state.x = x
+#    state.y = y  
+#    print "x = " + str(x)
+#    print "y = " + str(y)   
+
+    return (x, y)
+
 if __name__ != "__main__":    
-    LT_issuer_state = readIssuerKeys()
+    (x, y) = readIssuerKeys()
     
 if __name__ == "__main__":
-    print("This is run standalone to create the issuer key file ...")
+    print("This is run standalone to create the issuer key files ...")
     LT_issuer_state, issuer_pub = BLcred.BL_issuer_keys(params)
-    # write the private, public key to a file
-    serialisation = serialise((LT_issuer_state.x,LT_issuer_state.y))
+    # write the private, public key to files    
+
+    # This should only be run once
+    # Private key should only be in the bank folder - just run this file in the bank
+    # and then copy the public files into the other folders
+    serialisation = serialise(LT_issuer_state.x)
     print "x = " + str(LT_issuer_state.x)
+    with open('IssuerKeyFile_private.key', 'w') as f:
+        f.write(serialisation)
+
+    serialisation = serialise(LT_issuer_state.y)
     print "y = " + str(LT_issuer_state.y)
-    with open('IssuerKeyFile.key', 'w') as f:
+    with open('IssuerKeyFile_public.key', 'w') as f:
         f.write(serialisation)
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------
@@ -195,7 +222,7 @@ def spending_3(msg_to_merchant_epmupcoin, desc):
 
     lhs = (om + omp) % q
     rhs_h = [zet, zet1, 
-            ro * g + om * LT_issuer_state.y,
+            ro * g + om * y,
             ro1p * g + omp * zet1,
             ro2p * h + omp * zet2, ## problem
             mup * z + epsilonp * zet]
@@ -235,12 +262,11 @@ def doublespendcalc(epsilonp, mup, epsilonp2, mup2, zet1):
     # Confirm that we can work out who the guilty party is...
     # We have (epsilonp, mup) for first validation, and (epsilonp2, mup2) for the second validation
 
-    print("epsilonp:    " + str(epsilonp))
-    print("epsilonp2:   " + str(epsilonp2))
-    print("mup:         " + str(mup))
-    print("mup2:        " + str(mup2))
-    print("zet1:        " + str(zet1))
-
+#    print("epsilonp:    " + str(epsilonp))
+#    print("epsilonp2:   " + str(epsilonp2))
+#    print("mup:         " + str(mup))
+#    print("mup2:        " + str(mup2))
+#    print("zet1:        " + str(zet1))
 
     mupd = (mup2 - mup) % q
     epsilonpd = (epsilonp - epsilonp2) % q
@@ -255,5 +281,158 @@ def doublespendcalc(epsilonp, mup, epsilonp2, mup2, zet1):
     
     z1calc = invGamma * zet1
 #    print "z1      = " + str(z1)
-    print "z1calc  = " + str(serialise(z1calc))
+#    print "z1calc  = " + str(serialise(z1calc))
     return z1calc
+
+############################################################################################
+# Table 8: Revealing the attribute
+# add Attribute Reveal Protocol
+# L1 - amount
+# L2 - expiry date
+    
+def rev_attribute_1(Lj, gam, zet, zet1, rnd, R, att):
+    (rnd, )= rnd
+    L1, L2 = att 
+    if Lj == "amount": 
+        Lj = L1
+        j = 1
+    if Lj == "expirydate": 
+        Lj = L2
+        j = 2
+    
+
+    # Wallet side calculations
+    rndp = q.random()
+    #print "L2 type: " + L2.__class__.__name__ 
+    #print "gam type: " + gam.__class__.__name__
+    Cp = (Lj * gam) * hs[j] + (rndp * gam) * g
+    r, rp, r0, r1, r2 = [q.random() for _ in range(5)]
+    rj = (r0, r1, r2)[j]
+#   new
+    rgam = q.random()
+
+    zet1h = r0 * hs[0] + r1 * hs[1] + r2 * hs[2] + r * g
+    Cph = rj * hs[j] + rp * g
+#    c = test_Hash( [zet1, zet1h, Cp, Cph, "date/time"] )
+#   new
+    # recall zet from before
+    zeth = rgam * z
+    hjp = gam * hs[j]
+    hjh = rgam * hs[j]
+    cpdiv = (rndp * gam) * g
+    cljh = rp * g
+    c = test_Hash( [zet1, zet1h, Cp, Cph, "date/time", zet, zeth, hjp, hjh, cpdiv, cljh] )
+
+    s0 = (r0 + c * R    * gam) % q
+    s1 = (r1 + c * L1   * gam) % q
+    s2 = (r2 + c * L2   * gam) % q
+    s  = (r  + c * rnd  * gam) % q
+    sp = (rp + c * rndp * gam) % q
+#new
+    sgam = (rgam + c * gam) % q
+    # wallet now reveals Lj, zet1, zet1h, Cp, Cph, s0..s2, s, sp, sgam, zet, zeth, hjp, hjh, cljh
+    print ("c1: " + str(c))
+    print ("s1: " + str(s1))
+    print ("s2: " + str(s2))
+    return (Lj, j, zet1, zet1h, Cp, Cph, s0, s1, s2, s, sp, sgam, zet, zeth, hjp, hjh, cljh)
+    
+def rev_attribute_2(values):
+    Lj, j, zet1, zet1h, Cp, Cph, s0, s1, s2, s, sp, sgam, zet, zeth, hjp, hjh, cljh = values
+    
+    print ("s1: " + str(s1))
+    print ("s2: " + str(s2))
+    
+    sj = (s0, s1, s2)[j]
+
+    print ("sj: " + str(sj))
+
+    # Merchant/Bank side validations
+    # merchant side is given all the input parameters to the hash, so no need to recalc that here - it's Fiat-Shamir
+    #print "zet1h type: " + zet1h.__class__.__name__
+    
+    cpdiv = Cp -(Lj * hjp)
+#    print (cpdiv == cpdiv2)
+    c = test_Hash( [zet1, zet1h, Cp, Cph, "date/time", zet, zeth, hjp, hjh, cpdiv, cljh] )
+    print ("c2: " + str(c))
+
+
+    lhs = zet1h + c * zet1
+    rhs = s0 * hs[0] + s1 * hs[1] + s2 * hs[2] + s * g
+    print "lhs:  " + str(lhs) 
+    print "rhs:  " + str(rhs)
+    print
+    
+    #print "Cph type: " + Cph.__class__.__name__
+    lhs1 = Cph + c * Cp
+    rhs1 = sj * hs[j] + sp * g
+    print "lhs1: " + str(lhs1)
+    print "rhs1: " + str(rhs1)
+    print
+
+
+    lhs2 = zeth + c * zet
+    rhs2 = sgam * z
+    print "lhs2: " + str(lhs2)
+    print "rhs2: " + str(rhs2)
+    print
+
+    lhs3 = hjh + c * hjp
+    rhs3 = sgam * hs[j]
+    print "lhs3: " + str(lhs3)
+    print "rhs3: " + str(rhs3)
+    print
+
+    lhs4 = cljh + c * cpdiv
+    rhs4 = sp * g
+    print "lhs4: " + str(lhs4)
+    print "rhs4: " + str(rhs4)
+    print
+
+    a = lhs  == rhs
+    b = lhs1 == rhs1
+    c = lhs2 == rhs2
+    d = lhs3 == rhs3
+    e =  lhs4 == rhs4
+
+    return (a and b and c and d and e, Lj)
+
+
+############################################################################################
+# Proof of knowledge - pi
+def pi_proof_wallet(C, R, L1, L2):
+    # recall that user's C
+    # C = R * hs[0] + L1 * hs[1] + L2 * hs[2]
+
+    # wallet side
+    Cp = R * hs[0]
+    rnd = q.random()
+    a = rnd * hs[0]
+    c_wallet = test_Hash( [a, hs[0], Cp] )
+    r = rnd + R * c_wallet
+
+    # send over c_wallet, r, a, C, Cp, L1, L2
+    pi_proof_values = c_wallet, r, a, C, Cp, L1, L2
+    return pi_proof_values
+
+def pi_proof_bank(pi_proof_values):
+    c_wallet, r, a, C, Cp, L1, L2 = pi_proof_values
+
+    # bank side
+    c_bank = test_Hash( [a, hs[0], Cp] )
+    assert c_wallet == c_bank
+
+    lhs1 = r * hs[0]
+    rhs1 = c_bank * Cp + a
+
+    lhs2 = C
+    rhs2 = Cp + L1 * hs[1] + L2 * hs[2]
+
+    print ("lhs1: " + str(lhs1))
+    print ("rhs1: " + str(rhs1))
+    print
+
+    print ("lhs2: " + str(lhs2))
+    print ("rhs2: " + str(rhs2))
+    print
+
+    return (lhs1 == rhs1) and (lhs2 == rhs2)

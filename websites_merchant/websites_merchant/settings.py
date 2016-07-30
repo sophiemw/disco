@@ -109,7 +109,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'GMT'
 
 USE_I18N = True
 
@@ -122,3 +122,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/dev/howto/static-files/
 
 STATIC_URL = '/static/'
+
+WALLET_URL = 'http://192.168.33.10:8000/wallet'
+MERCHANT_URL = 'http://192.168.33.10:8080/merchant'
+BANK_URL = 'http://192.168.33.10:8090/bank'

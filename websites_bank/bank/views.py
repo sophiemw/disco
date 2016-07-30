@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth import logout, authenticate, login
 from django.contrib.auth.decorators import login_required
@@ -9,9 +10,11 @@ from django.template import RequestContext, loader
 from django import forms
 
 from bank.forms import SignupForm
-from bank.models import DoubleSpendingCoinHistory, DoubleSpendingz1Touser, CoinValidation, UserProfile
+from bank.models import UsersWhoHaveDoubleSpent, DoubleSpendingCoinHistory, DoubleSpendingz1Touser, CoinValidation, UserProfile
 
 import blshim, BLcred
+
+import datetime
 
 def index(request):
 	return render(request, 'bank/index.html')
@@ -147,9 +150,6 @@ def coincreation(request, num_of_coins):
 
 @login_required
 def confirmcoincreation(request, num_of_coins):
-    print("!!request.user: " + str(request.user.profile.balance))
-    print("request.session._session_key: " + request.session._session_key)
-
     new_balance = int(request.user.profile.balance) - int(num_of_coins)
 
     if (new_balance) < 0:
@@ -157,14 +157,16 @@ def confirmcoincreation(request, num_of_coins):
     else:
         sessionid = request.session._session_key
 
-        j = CoinValidation(sessionID=sessionid, username=request.user.username, num_of_coins=num_of_coins, commitment="", jsonstring="")
+        # Remove any old entries that might have been created by defects
+        db = CoinValidation.objects.filter(sessionID=sessionid)
+        db.delete()
+
+        j = CoinValidation(sessionID=sessionid, user=request.user, num_of_coins=num_of_coins, commitment="", jsonstring="")
         j.save()
         
         entry = blshim.serialise((int(num_of_coins), sessionid))
 
-        s = 'http://192.168.33.10:8000/wallet/coinsuccess/?entry=%s' %(entry)
-
-        print ("string: " + s)
+        s = settings.WALLET_URL + '/coinsuccess/?entry=%s' %(entry)
 
         return HttpResponseRedirect(s)
 
@@ -185,7 +187,7 @@ def coindestroysuccess(request, num_of_coins):
     request.user.profile.save()
     print("!!request.user after: " + str(request.user.profile.balance))
     #return render(request, 'bank/coindestroysuccess.html', context)
-    return HttpResponseRedirect('http://192.168.33.10:8000/wallet/coindestroysuccess/' + num_of_coins)
+    return HttpResponseRedirect(settings.WALLET_URL + '/coindestroysuccess/' + num_of_coins)
 
 
 
@@ -207,36 +209,39 @@ def payuser(request):
 def testPrepVal(request):
     # PREPARATION STAGE - BL_issuer_preparation
     serialised_entry = request.GET.get('serialised_entry')
-    real_C, sessionid = blshim.deserialise(serialised_entry)
+    pi_proof_values, real_C, sessionid, value_of_coin, expirydate = blshim.deserialise(serialised_entry)
 
-    msg_to_user_rnd = BLcred.BL_issuer_preparation(blshim.LT_issuer_state, real_C)
-    print("msg_to_user_rnd: " + str(msg_to_user_rnd))
+    if blshim.pi_proof_bank(pi_proof_values):
+        LT_issuer_state = blshim.create_issuer_state()
 
-    #TODO REMEBER MULTITHREADING 
+        msg_to_user_rnd = BLcred.BL_issuer_preparation(LT_issuer_state, real_C)
+        print("msg_to_user_rnd: " + str(msg_to_user_rnd))
 
-    # VALIDATION STAGE 1 - BL_issuer_validation
-    msg_to_user_aap = BLcred.BL_issuer_validation(blshim.LT_issuer_state)
+        # VALIDATION STAGE 1 - BL_issuer_validation
+        msg_to_user_aap = BLcred.BL_issuer_validation(LT_issuer_state)
 
-    s = blshim.serialise((msg_to_user_rnd, msg_to_user_aap))
-    print s
+        results = msg_to_user_rnd, msg_to_user_aap
 
-    # can't easily use sessions - browsers
-    serialised_C = blshim.serialise(real_C)
-    js_cpu = blshim.serialise((blshim.LT_issuer_state.cp, blshim.LT_issuer_state.u, blshim.LT_issuer_state.r1p, blshim.LT_issuer_state.r2p))
-    #js_cpu = "HIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"
+        s = blshim.serialise((True, results))
 
-    j = CoinValidation.objects.get(sessionID=sessionid)
+        # can't easily use sessions - browsers
+        serialised_C = blshim.serialise(real_C)
+        js_cpu = blshim.serialise((LT_issuer_state.cp, LT_issuer_state.u, LT_issuer_state.r1p, LT_issuer_state.r2p))
 
-    j.commitment=serialised_C
-    j.jsonstring=js_cpu
-    j.save()
+        j = CoinValidation.objects.get(sessionID=sessionid)
 
-    ss = DoubleSpendingz1Touser(z1=blshim.serialise(blshim.LT_issuer_state.z1), username=j.username)
-    ss.save()
+        j.commitment=serialised_C
+        j.jsonstring=js_cpu
+        j.save()
 
+        ss = DoubleSpendingz1Touser(z1=blshim.serialise(LT_issuer_state.z1), user=j.user, expirydate=expirydate, value_of_coin=value_of_coin)
+        ss.save()
 
+        return HttpResponse(s)
+    else:
+        s = blshim.serialise((False, "problems with pi proof"))
+        return HttpResponse(s)
 
-    return HttpResponse(s)
 
 
 def testVal2(request):
@@ -249,12 +254,15 @@ def testVal2(request):
 
     # need to deduct the money from the user's account
     # and confirm the number of coins requested is the same as that approved earlier 
-    blshim.LT_issuer_state.cp, blshim.LT_issuer_state.u, blshim.LT_issuer_state.r1p, blshim.LT_issuer_state.r2p = blshim.deserialise(db.jsonstring)
 
-    msg_to_user_crcprp = BLcred.BL_issuer_validation_2(blshim.LT_issuer_state, real_e)
+    LT_issuer_state =  blshim.create_issuer_state()
+
+    LT_issuer_state.cp, LT_issuer_state.u, LT_issuer_state.r1p, LT_issuer_state.r2p = blshim.deserialise(db.jsonstring)
+
+    msg_to_user_crcprp = BLcred.BL_issuer_validation_2(LT_issuer_state, real_e)
 
     # updating user's balance
-    u = User.objects.get(username=db.username)
+    u = db.user
     u.profile.balance = int(u.profile.balance) - db.num_of_coins
     u.profile.save()
 
@@ -277,12 +285,12 @@ def testvalidation(request):
     #serialiser converts lists to tuples by default
     list_of_msgs = list(list_of_msgs)
 
-    for msg_to_merchant_epmupcoin in list_of_msgs:
+    for coin_with_reveals in list_of_msgs:
+        msg_to_merchant_epmupcoin, amount_rev_values, expiry_rev_values, value_of_coin, expirydate = coin_with_reveals
 
         valid_3 = blshim.spending_3(msg_to_merchant_epmupcoin, desc)
 
         if valid_3:
-
             # double spending checks here
             (epsilonp, mup, coin) = msg_to_merchant_epmupcoin
             serialise_coin = blshim.serialise(coin)
@@ -295,27 +303,45 @@ def testvalidation(request):
 
                 (m, zet, zet1, zet2, om, omp, ro, ro1p, ro2p) = coin
 
-                z1calc = blshim.doublespendcalc(epsilonp, mup, epsilonp2, mup2, zet1)
-         
+                z1calc = blshim.doublespendcalc(epsilonp, mup, epsilonp2, mup2, zet1)         
                 z1calc_s = blshim.serialise(z1calc)
 
                 # now we look z1calc in DoubleSpendingz1Touser to find the user..
-
                 guilty_user = DoubleSpendingz1Touser.objects.get(z1=blshim.serialise(z1calc))
-                print("@@@@@@@guilty_user: " + guilty_user.username)
 
-                # TODO consquences of naughty db & not let spending happen
-                #return HttpResponse(blshim.serialise((False, "DOUBLE SPENDING"))) 
+                # Add guilty user to a list of all users who have double spent
+                n = UsersWhoHaveDoubleSpent(user=guilty_user.user, coin=serialise_coin, serialised_entry=check.serialised_entry)
+                n.save()
+
 #               valid = not (valid or False)
                 valid = False
                 error_reason = "DOUBLE SPENDING"
             except DoubleSpendingCoinHistory.DoesNotExist:
                 # good - because then there is no double spending
                 # add coin to db here
-
                 serialised_entry = blshim.serialise((epsilonp, mup))
 
                 list_of_coins_to_put_in_db.append((serialise_coin, serialised_entry))
+
+                # check coin's attributes - value, expiry date
+                coin_value_valid, Lj_value = blshim.rev_attribute_2(amount_rev_values)
+                print ("value: " + str(coin_value_valid))
+                coin_expiry_valid, Lj_expirydate = blshim.rev_attribute_2(expiry_rev_values)
+                print ("expiry: " + str(coin_expiry_valid))
+
+                if coin_value_valid:
+                    valid = Lj_value == value_of_coin
+                    if valid and coin_expiry_valid:
+                        # http://www.saltycrane.com/blog/2008/06/how-to-get-current-date-and-time-in/
+                        now = datetime.datetime.now() 
+                        valid = (Lj_expirydate == expirydate) and (expirydate > now.year)
+                        if not valid: error_reason = "Coin expired"
+                    else:
+                        valid = False
+                        error_reason = "Coin not valid"
+                else:
+                    valid = False
+                    error_reason = "Coins values are different"
 
         else:
             valid = False
@@ -329,9 +355,7 @@ def testvalidation(request):
             dc = DoubleSpendingCoinHistory(coin=serialise_coin, serialised_entry=serialised_entry)
             dc.save()
 
-    # also do expiry 
     # update merchant's bank account
-
     # TODO payuser()
 
     return HttpResponse(blshim.serialise((valid, error_reason)))

@@ -11,8 +11,8 @@ from django.utils.encoding import python_2_unicode_compatible
 class Coins(models.Model):
 	user = models.ForeignKey(User, on_delete=models.CASCADE)
 	value_of_coin = models.IntegerField(validators=[validators.MinValueValidator(0)])
-	#coin_code = models.CharField(max_length=500, )
-	serialised_code_rnd_tau_gam = models.CharField(max_length=500, )
+	serialised_code_rnd_tau_gam_R_att = models.CharField(max_length=500, )
+	expirydate = models.IntegerField()
 
 	def __str__(self):
 		return ' '.join([
@@ -29,6 +29,3 @@ class PaymentSession(models.Model):
 
 	def __str__(self):
 		return self.user.username + " " + str(self.amount)
-
-
-# TODO list of users who have double spent
