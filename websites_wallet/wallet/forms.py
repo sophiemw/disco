@@ -1,4 +1,5 @@
 from django import forms 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import ValidationError
@@ -7,6 +8,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.template import RequestContext
 
 # https://docs.djangoproject.com/en/1.9/ref/validators/
+# https://docs.djangoproject.com/en/dev/ref/forms/fields/#choicefield
 
 class SignupForm(UserCreationForm):
 
@@ -17,7 +19,7 @@ class SignupForm(UserCreationForm):
 class GetCoinForm(forms.Form):
     # http://tutorial.djangogirls.org/en/django_forms/
     # https://docs.djangoproject.com/en/1.9/topics/forms/modelforms/
-    coinnum = forms.IntegerField(label='Number of coins wanted', min_value=0)
+    coinnum = forms.ChoiceField(label='Number of coins wanted', choices=settings.COIN_VALUE_CHOICES)
     #error_messages = {
     #'coinnum': {'required': "You can't make zero coins"}
     #}

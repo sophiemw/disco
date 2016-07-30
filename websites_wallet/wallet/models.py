@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import validators
 from django.core.exceptions import ValidationError
@@ -7,10 +8,11 @@ from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 
 # https://docs.djangoproject.com/en/1.9/topics/db/examples/many_to_one/
+# https://docs.djangoproject.com/en/dev/ref/models/fields/#choices
 @python_2_unicode_compatible  # only if you need to support Python 2
 class Coins(models.Model):
 	user = models.ForeignKey(User, on_delete=models.CASCADE)
-	value_of_coin = models.IntegerField(validators=[validators.MinValueValidator(0)])
+	value_of_coin = models.IntegerField(choices=settings.COIN_VALUE_CHOICES)
 	serialised_code_rnd_tau_gam_R_att = models.CharField(max_length=500, )
 	expirydate = models.IntegerField()
 

@@ -128,3 +128,14 @@ SESSION_COOKIE_PATH='/wallet'
 WALLET_URL = 'http://192.168.33.10:8000/wallet'
 MERCHANT_URL = 'http://192.168.33.10:8080/merchant'
 BANK_URL = 'http://192.168.33.10:8090/bank'
+
+COIN_VALUE_CHOICES = (
+        (1, '1'),
+        (2, '2'),
+        (3, '3'),
+        (4, '4'),
+        (5, '5'),
+        (10, '10'),
+        (15, '15'),
+        (20, '20')
+        )
