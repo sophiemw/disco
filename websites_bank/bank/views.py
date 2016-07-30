@@ -209,32 +209,39 @@ def payuser(request):
 def testPrepVal(request):
     # PREPARATION STAGE - BL_issuer_preparation
     serialised_entry = request.GET.get('serialised_entry')
-    real_C, sessionid, value_of_coin, expirydate = blshim.deserialise(serialised_entry)
+    pi_proof_values, real_C, sessionid, value_of_coin, expirydate = blshim.deserialise(serialised_entry)
 
-    LT_issuer_state = blshim.create_issuer_state()
+    if blshim.pi_proof_bank(pi_proof_values):
+        LT_issuer_state = blshim.create_issuer_state()
 
-    msg_to_user_rnd = BLcred.BL_issuer_preparation(LT_issuer_state, real_C)
-    print("msg_to_user_rnd: " + str(msg_to_user_rnd))
+        msg_to_user_rnd = BLcred.BL_issuer_preparation(LT_issuer_state, real_C)
+        print("msg_to_user_rnd: " + str(msg_to_user_rnd))
 
-    # VALIDATION STAGE 1 - BL_issuer_validation
-    msg_to_user_aap = BLcred.BL_issuer_validation(LT_issuer_state)
+        # VALIDATION STAGE 1 - BL_issuer_validation
+        msg_to_user_aap = BLcred.BL_issuer_validation(LT_issuer_state)
 
-    s = blshim.serialise((msg_to_user_rnd, msg_to_user_aap))
+        results = msg_to_user_rnd, msg_to_user_aap
 
-    # can't easily use sessions - browsers
-    serialised_C = blshim.serialise(real_C)
-    js_cpu = blshim.serialise((LT_issuer_state.cp, LT_issuer_state.u, LT_issuer_state.r1p, LT_issuer_state.r2p))
+        s = blshim.serialise((True, results))
 
-    j = CoinValidation.objects.get(sessionID=sessionid)
+        # can't easily use sessions - browsers
+        serialised_C = blshim.serialise(real_C)
+        js_cpu = blshim.serialise((LT_issuer_state.cp, LT_issuer_state.u, LT_issuer_state.r1p, LT_issuer_state.r2p))
 
-    j.commitment=serialised_C
-    j.jsonstring=js_cpu
-    j.save()
+        j = CoinValidation.objects.get(sessionID=sessionid)
 
-    ss = DoubleSpendingz1Touser(z1=blshim.serialise(LT_issuer_state.z1), user=j.user, expirydate=expirydate, value_of_coin=value_of_coin)
-    ss.save()
+        j.commitment=serialised_C
+        j.jsonstring=js_cpu
+        j.save()
 
-    return HttpResponse(s)
+        ss = DoubleSpendingz1Touser(z1=blshim.serialise(LT_issuer_state.z1), user=j.user, expirydate=expirydate, value_of_coin=value_of_coin)
+        ss.save()
+
+        return HttpResponse(s)
+    else:
+        s = blshim.serialise((False, "problems with pi proof"))
+        return HttpResponse(s)
+
 
 
 def testVal2(request):

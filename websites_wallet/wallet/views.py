@@ -141,9 +141,12 @@ def homepage(request):
 def coinsuccess(request):
     num_of_coins, sessionid = blshim.deserialise(request.GET.get('entry'))
 
-    ignoreresponse = testcoincreation(request, num_of_coins, sessionid, request.user)
+    valid = testcoincreation(request, num_of_coins, sessionid, request.user)
 
-    return render(request, 'wallet/coinsuccess.html', {'num_of_coins': num_of_coins})
+    if valid: 
+        return render(request, 'wallet/coinsuccess.html', {'num_of_coins': num_of_coins})
+    else:
+        return HttpResponse("pi proof failed")
 
 
 @login_required
@@ -209,46 +212,52 @@ def testcoincreation(request, coinnum, sessionid, user):
     # value, expiry date
     LT_user_state, user_commit = BLcred.BL_user_setup(blshim.params, [coinnum, expirydate])
 
-    s_entry = blshim.serialise((user_commit, sessionid, coinnum, expirydate))
+    (C, ) = user_commit
+    pi_proof_values = blshim.pi_proof_wallet(C, LT_user_state.R, coinnum, expirydate)
+
+    s_entry = blshim.serialise((pi_proof_values, user_commit, sessionid, coinnum, expirydate))
 
     r = requests.get(settings.BANK_URL + '/testPrepVal/?serialised_entry=%s' %(s_entry))
     c = r.content
 
-    (rnd, aap) = blshim.deserialise(c)
+    (valid, results) = blshim.deserialise(c)
 
-    BLcred.BL_user_preparation(LT_user_state, rnd)
+    if valid:
+        rnd, aap = results
 
-    msg_to_issuer_e = epsilon = BLcred.BL_user_validation(LT_user_state, (blshim.y, ), aap)
+        BLcred.BL_user_preparation(LT_user_state, rnd)
 
-    # new webservice here
-    # sending e
-    s_entry = blshim.serialise((msg_to_issuer_e, user_commit, sessionid))
-    
-    r = requests.get(settings.BANK_URL + '/testVal2/?serialised_entry=%s' %(s_entry))
-    c = r.content
+        msg_to_issuer_e = epsilon = BLcred.BL_user_validation(LT_user_state, (blshim.y, ), aap)
 
-    msg_to_user_crcprp = blshim.deserialise(c)
+        # new webservice here
+        # sending e
+        s_entry = blshim.serialise((msg_to_issuer_e, user_commit, sessionid))
+        
+        r = requests.get(settings.BANK_URL + '/testVal2/?serialised_entry=%s' %(s_entry))
+        c = r.content
 
-    signature = BLcred.BL_user_validation2(LT_user_state, msg_to_user_crcprp)
+        msg_to_user_crcprp = blshim.deserialise(c)
 
-    ##VALIDATION THAT THE COIN IS VALID
-    b = BLcred.BL_check_signature(blshim.params, (blshim.y, ), signature)
+        signature = BLcred.BL_user_validation2(LT_user_state, msg_to_user_crcprp)
 
-    # Saving the coin into the DB
-    # signature and coins are different - mu
-    # serialising the stuff to save in the db
-    (m, LT_user_state.zet, LT_user_state.zet1, LT_user_state.zet2, om, omp, ro, ro1p, ro2p, mu) = signature
+        ##VALIDATION THAT THE COIN IS VALID
+        b = BLcred.BL_check_signature(blshim.params, (blshim.y, ), signature)
 
-    coin = (m, LT_user_state.zet, 
-                LT_user_state.zet1, 
-                LT_user_state.zet2, om, omp, ro, ro1p, ro2p)
+        # Saving the coin into the DB
+        # signature and coins are different - mu
+        # serialising the stuff to save in the db
+        (m, LT_user_state.zet, LT_user_state.zet1, LT_user_state.zet2, om, omp, ro, ro1p, ro2p, mu) = signature
 
-    serialised_code_rnd_tau_gam_R_att = blshim.serialise((coin, rnd, LT_user_state.tau, LT_user_state.gam, LT_user_state.R, LT_user_state.attributes))
+        coin = (m, LT_user_state.zet, 
+                    LT_user_state.zet1, 
+                    LT_user_state.zet2, om, omp, ro, ro1p, ro2p)
 
-    c = Coins(user=user, value_of_coin=coinnum, serialised_code_rnd_tau_gam_R_att=serialised_code_rnd_tau_gam_R_att, expirydate=expirydate)
-    c.save()
+        serialised_code_rnd_tau_gam_R_att = blshim.serialise((coin, rnd, LT_user_state.tau, LT_user_state.gam, LT_user_state.R, LT_user_state.attributes))
 
-    return HttpResponse("user_commit: " + str(user_commit))
+        c = Coins(user=user, value_of_coin=coinnum, serialised_code_rnd_tau_gam_R_att=serialised_code_rnd_tau_gam_R_att, expirydate=expirydate)
+        c.save()
+
+    return valid 
 
 
 def testspending(request):
