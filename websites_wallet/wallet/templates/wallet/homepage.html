@@ -21,7 +21,7 @@
 		{% for coin in users_coins %}
 		<tr>
 			<td>{{ coin.value_of_coin }}</td>
-			<td><a href="{% url 'wallet:convertingcoinsbacktomoney' coin.value_of_coin %}"><button type="button">Turn back into money</button></a></td>
+			<td><a href="{% url 'wallet:convertingcoinsbacktomoney' coin.value_of_coin coin.pk %}"><button type="button">Turn back into money</button></a></td>
 		</tr>
 	    {% endfor %}
     </table>

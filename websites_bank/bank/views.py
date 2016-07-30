@@ -171,24 +171,24 @@ def confirmcoincreation(request, num_of_coins):
         return HttpResponseRedirect(s)
 
 @login_required
-def coindestroy(request, num_of_coins):
+def coindestroy(request, num_of_coins, coinpk):
     print("!!request.user: " + str(request.user.profile.balance))
     context = {
-        'num_of_coins': num_of_coins
+        'num_of_coins': num_of_coins,
+        'coinpk': coinpk
     }
     return render(request, 'bank/coindestroy.html', context)
 
 
 @login_required
-def coindestroysuccess(request, num_of_coins):
+def coindestroysuccess(request, num_of_coins, coinpk):
     context = {'num_of_coins': num_of_coins}
     print("!!request.user before: " + str(request.user.profile.balance))
     request.user.profile.balance = request.user.profile.balance + int(num_of_coins)
     request.user.profile.save()
     print("!!request.user after: " + str(request.user.profile.balance))
     #return render(request, 'bank/coindestroysuccess.html', context)
-    return HttpResponseRedirect(settings.WALLET_URL + '/coindestroysuccess/' + num_of_coins)
-
+    return HttpResponseRedirect(settings.WALLET_URL + '/coindestroysuccess/' + num_of_coins + "/" + coinpk)
 
 
 def payuser(request):

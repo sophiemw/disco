@@ -179,18 +179,19 @@ def payment(request, payment_amount, item_id):
 
 
 @login_required
-def convertingcoinsbacktomoney(request, coinnum):
+def convertingcoinsbacktomoney(request, coinnum, coinpk):
     context = {
         'coinnum': coinnum,
-        'BANK_URL': settings.BANK_URL
+        'BANK_URL': settings.BANK_URL,
+        'coinpk': coinpk
     }
     return render(request, 'wallet/convertingcoinsbacktomoney.html', context)
 
 
 @login_required
-def coindestroysuccess(request, num_of_coins):
+def coindestroysuccess(request, num_of_coins, coinpk):
     # TODO NEED TO CHANGE THIS TO SOMETHING UNIQUE
-    request.user.coins_set.filter(value_of_coin=num_of_coins).delete()
+    request.user.coins_set.filter(pk=coinpk).delete()
     context = {'num_of_coins': num_of_coins}
     return render(request, 'wallet/coindestroysuccess.html', context)
 
