@@ -1,5 +1,11 @@
-<h1>Merchant</h1>
+{% extends 'merchant/base.html' %}
+{% block content %}
+<div id="itemsuccess2">
 
-<h2>{{ item.title }} has been successfully bought !!</h2>
 
-<button type="button">Download item</button>
+	<h2>{{ item.title }} has been successfully bought !!</h2>
+
+	<br><button class="btn btn-danger btn-large" type="button">Download item</button>
+
+</div>
+{% endblock %}

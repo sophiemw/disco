@@ -1,19 +1,31 @@
 from django.conf import settings
-from django.http import Http404, HttpResponse
+from django.http import HttpResponseRedirect, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, render
 
-from merchant.models import Items
+from merchant.models import Category, Items
 
 import BLcred, blshim
 
 import requests
 
 def index(request):
-    all_items = Items.objects.all()
-    context = {
-    	'all_items': all_items
-    }
-    return render(request, 'merchant/index.html', context)
+	return HttpResponseRedirect('/merchant/homepage/?category=')
+
+def homepage(request):
+	category = request.GET.get('category')
+
+	if category == "":
+		all_items = Items.objects.all()
+	else:
+		all_items = Items.objects.filter(tags__tag=category)
+	
+	all_categories = Category.objects.all()
+	context = {
+		'MERCHANT_URL': settings.MERCHANT_URL,
+		'all_items': all_items,
+		'all_categories': all_categories
+	}
+	return render(request, 'merchant/homepage.html', context)
 
 
 def itemdetail(request, item_id):

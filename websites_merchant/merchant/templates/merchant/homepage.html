@@ -1,0 +1,46 @@
+{% extends 'merchant/base.html' %}
+{% block content %}
+<div id="index" class="container">
+
+    <div class="categories">
+        <h3>Categories:</h3>
+        <ul>
+        {% for category in all_categories %}
+            <li><a href="{{ MERCHANT_URL }}/homepage/?category={{ category }}">{{ category }}</a</li>
+        {% endfor %}
+    </ul>
+    </div>
+    <div class="all-items">
+        {% if all_items %}
+            
+            {% for item in all_items %}
+                
+            <table>
+            	<tr>
+            		<td rowspan="4" width="140"><img src="/{{ item.image.url }}" align="center" width="120" alt="itempic"></td>
+            		<td><h3><a href="{% url 'merchant:itemdetail' item.id %}">{{ item.title }}</a></h3></td>
+            	</tr>
+            	<tr>
+            		<td>{{ item.description }}</td>
+            	</tr>
+            	<tr>
+            		<td><b>Price in coins:</b> {{ item.price }}</td>
+            	</tr>
+            	<tr>
+            		<td><i>
+            			{% for t in item.tags.all %}
+            				{{ t }},
+            			{% endfor %}
+            		</i></td>
+            	</tr>
+            </table>
+            <br>
+
+            {% endfor %}
+            
+        {% else %}
+            <p>No items are available.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
