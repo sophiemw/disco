@@ -11,7 +11,7 @@ from django.template import RequestContext
 
 from bank.models import UserProfile     
 
-class SignupForm(UserCreationForm):
+class RegisterForm(UserCreationForm):
     # http://stackoverflow.com/questions/16562529/django-1-5-usercreationform-custom-auth-model
     # http://jessenoller.com/blog/2011/12/19/quick-example-of-extending-usercreationform-in-django
     # https://github.com/django/django/blob/master/django/contrib/auth/forms.py

@@ -10,7 +10,7 @@ from django.template import RequestContext
 # https://docs.djangoproject.com/en/1.9/ref/validators/
 # https://docs.djangoproject.com/en/dev/ref/forms/fields/#choicefield
 
-class SignupForm(UserCreationForm):
+class RegisterForm(UserCreationForm):
 
     class Meta:
         model = User

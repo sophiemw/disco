@@ -6,6 +6,6 @@ Account<br>
 <a href="{% url 'wallet:homepage' %}">Homepage</a><br>
 <a href="{% url 'wallet:logout' %}">Logout</a><br>
 {% else %}
-<a href="{% url 'wallet:signup' %}">Register Here</a><br>
+<a href="{% url 'wallet:register' %}">Register Here</a><br>
 <a href="{% url 'wallet:login' %}">Log In Here</a>
 {% endif %}
