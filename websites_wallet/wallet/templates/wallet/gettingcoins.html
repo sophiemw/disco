@@ -1,5 +1,8 @@
-<h1>Wallet</h1>
+{% extends 'wallet/base.html' %}
+{% block content %}
 
-<p>Number of coins to be created: <b>{{ coinnum }}</b></p>
+	<p>Number of coins to be created: <b>{{ coinnum }}</b></p>
 
-<iframe src="{{ BANK_URL }}/coincreation/{{ coinnum }}" width="700" height="700"></iframe>
+	<iframe src="{{ BANK_URL }}/coincreation/{{ coinnum }}" width="700" height="700"></iframe>
+
+{% endblock %}

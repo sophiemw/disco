@@ -19,7 +19,7 @@ class RegisterForm(UserCreationForm):
 class GetCoinForm(forms.Form):
     # http://tutorial.djangogirls.org/en/django_forms/
     # https://docs.djangoproject.com/en/1.9/topics/forms/modelforms/
-    coinnum = forms.ChoiceField(label='Number of coins wanted', choices=settings.COIN_VALUE_CHOICES)
+    coinnum = forms.ChoiceField(label='Number of coins wanted:', choices=settings.COIN_VALUE_CHOICES)
     #error_messages = {
     #'coinnum': {'required': "You can't make zero coins"}
     #}

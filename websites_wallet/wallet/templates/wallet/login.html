@@ -1,20 +1,38 @@
-<!DOCTYPE html>
+{% extends 'wallet/base.html' %}
+{% block content %}
+<div id="login" class="container">
+	<div class="well well-small">
 
-<h1>Wallet log in</h1>
+		<h2>Log in</h2>
 
-{% if next %}
-<form action="/wallet/login/?next={{next}}" method="post" >
-{%else%}
-<form action="{% url 'wallet:login' %}" id="login_form" method="post">
-{% endif %}
+		<div id="error_message">
+			{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+		</div>
 
-    {% csrf_token %}
-    Username: <input type="text" name="username" value="" size="50">
-    <br>
-    Password: <input type="password" name="password" value="" size="50">
-    <br>
+		{% if next %}
+		<form action="/wallet/login/?next={{next}}" method="post" >
+		{%else%}
+		<form action="{% url 'wallet:login' %}" id="login_form" method="post">
+		{% endif %}
+		{% csrf_token %}
+			<div class="form-group">
+                <div class="input-group">
+				    <div class="input-group-addon"><i class="glyphicon glyphicon-user"></i></div>
+				    <input type="text" name="username" class="form-control" placeholder="username" required="required"  value="" size="50">
+			    </div>
+			    <div class="input-group">
+			    	<div class="input-group-addon"><i class="glyphicon glyphicon-lock"></i></div>
+			    	<input type="password" class="form-control" name="password" placeholder="password" required="required" value="" size="50">
+			    </div>
+			</div>
+		    <div class="form-group">
+		    	<input type="submit" class="btn btn-success btn-large btn-block" value="Log in" />
+		    </div>
+		</form>
 
-    <input type="submit" value="submit" />
-</form>
+		<a href="{% url 'wallet:register' %}">Register Here</a>
 
-<a href="{% url 'wallet:register' %}">Register Here</a>
+	</div>
+</div>
+
+{% endblock %}

@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'bootstrap3',
     'wallet.apps.WalletConfig',
     'django.contrib.admin',
     'django.contrib.auth',

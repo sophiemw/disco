@@ -4,11 +4,10 @@ from . import views
 
 app_name = 'wallet'
 urlpatterns = [
-    url(r'^$', views.index, name='index'),
+    url(r'^$', views.homepage, name='homepage'),
     url(r'register/$', views.register, name='register'),
     url(r'login/$', views.user_login, name='login'),
     url(r'logout/$', views.user_logout, name='logout'),
-    url(r'homepage/$', views.homepage, name='homepage'),
     url(r'^(?P<payment_amount>[0-9]+)/(?P<item_id>[0-9]+)/$', views.payment, name='payment'),
     url(r'coinsuccess/$', views.coinsuccess, name='coinsuccess'),
     url(r'coinsuccess2/$', views.coinsuccess2, name='coinsuccess2'),
