@@ -24,6 +24,7 @@ class petlibEncoder(json.JSONEncoder):
             return {"Bn:": base64.urlsafe_b64encode(obj.binary())}            
         return json.JSONEncoder.default(self, obj)
  
+
 def as_petlib2(dct):
     if 'EcPt:' in dct:
         binary = base64.urlsafe_b64decode(str(dct['EcPt:']))
@@ -33,13 +34,15 @@ def as_petlib2(dct):
         return Bn.from_binary(binary)            
     return dct 
 
+
 def tuplify(listything):
     if isinstance(listything, list): return tuple(map(tuplify, listything))
     if isinstance(listything, dict): return {k:tuplify(v) for k,v in listything.items()}
     return listything
-    
+   
+
 def serialise(t):
-    s = json.dumps(t, separators=(',', ':'),cls=petlibEncoder)
+    s = json.dumps(t, separators=(',', ':'), cls=petlibEncoder)
     return s
 
     
@@ -58,7 +61,7 @@ def create_issuer_state():
 
     return state
 
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+############################################################################################
 
 def readIssuerKeys():
     # read the key data from a file
@@ -105,119 +108,52 @@ if __name__ == "__main__":
     with open('IssuerKeyFile_public.key', 'w') as f:
         f.write(serialisation)
 
-#--------------------------------------------------------------------------------------------------------------------------------------------------
+############################################################################################
 
-
-def getParams():
-	#check if file exists
-		#if yes, read and return values from it 
-
-	#else, make it
-
-	try:
-		fo = open("params.json", "r")
-
-		parsed_json = json.load(fo)
-		print ("G: " + parsed_json['G'])
-		print("q:" + parsed_json['q'])
-		print("g:" + parsed_json['g'])
-		print("h:" + parsed_json['h'])
-		print("z:" + parsed_json['z'])
-		#print("hs:" + parsed_json['hs'])
-
-		fo.close()
-	except (IOError, OSError) as e:
-		fo = open("params.json", "w+")
-		#write and return params
-
-		G, q, g, h, z, hs = BLcred.BL_setup()
-
-		print("G:" + str(G))
-		print("q:" + str(q))
-		print("g:" + str(g))
-		print("h:" + str(h))
-		print("z:" + str(z))
-		#print("hs:" + str(hs))
-
-		j = {"G": G,
-			"q": q,
-			"g": g,
-			"h": h,
-			"z": z,
-			"hs":hs
-		}
-
-		json.dump(j, fo)
-
-		fo.close()
-
-#if __name__ == "__main__":
-	#getParams()
-#	print (BLcred.BL_setup())
-
-
-#--------------------------------------------------------------------------------------------------------------------------------------------------
-#--------------------------------------------------------------------------------------------------------------------------------------------------
-#--------------------------------------------------------------------------------------------------------------------------------------------------
 
 def test_Hash(params):
-    # e-coin: There is a lot of Hashing going on - make it into a function rather than inline it each time...
-    # e-coin: Make the Hashing more general purpose by using the str() function for each class type. 
-    # e-coin: EcPT__str__() gives a different encoding than export() 
-    # e-coin: Hstr = list(map(EcPt.export, params))
+    # There is a lot of Hashing going on - make it into a function rather than inline it each time...
+    # Make the Hashing more general purpose by using the str() function for each class type. 
+    # EcPT__str__() gives a different encoding than export() 
+    # Hstr = list(map(EcPt.export, params))
     Hstr = list(str(e) for e in params)
     Hhex = b"|".join(map(b64encode, Hstr))
     return Bn.from_binary(sha256(Hhex).digest())
 
+############################################################################################
+
 
 def spending_1(im):
     (G, q, g, h, z, hs) = params
-#    im = "merchantaccount details"
 
     # http://stackoverflow.com/questions/415511/how-to-get-current-time-in-python
     datetime2 = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')
     print("datetime2 " + datetime2)
 
-    # https://docs.python.org/2/library/hashlib.html
-    #desc = sha256((im, datetime)).hexdigest()
-
-    # H = [im, datetime]
-#    Hstr = [im, datetime]
-#    Hhex = b"|".join(map(b64encode, Hstr))
-#    desc = Bn.from_binary(sha256(Hhex).digest()) % q
-
     desc = test_Hash([im, datetime2]) % q
 
     return desc
 
-def spending_2(tau, gam, coin, desc):
-#    tau = user_state.tau
-    (G, q, g, h, z, hs) = params
-#    gam = user_state.gam
 
-#    H = [tau * z, coin, desc]
-#    Hstr = 
+def spending_2(tau, gam, coin, desc):
+    (G, q, g, h, z, hs) = params
 
     epsilonp = test_Hash([tau * z] + list(coin) + [desc]) % q
 
     mup = (tau - epsilonp * gam) % q
-   # print(mup.__class__.__name__)
 
     msg_to_merchant_epmupcoin = (epsilonp, mup, coin)
 
     return msg_to_merchant_epmupcoin
 
-def spending_3(msg_to_merchant_epmupcoin, desc):
 
+def spending_3(msg_to_merchant_epmupcoin, desc):
     (epsilonp, mup, coin) = msg_to_merchant_epmupcoin
     (m, zet, zet1, zet2, om, omp, ro, ro1p, ro2p) = coin
     (G, q, g, h, z, hs) = params
 
-    #TOOD
     #assert zet != 1 
 
-    #a = (mup * z + epsilonp * zet, coin, desc)
-    #assert epsilonp == sha256(a).hexdigest()
     assert epsilonp == (test_Hash([mup * z + epsilonp * zet] + list(coin) + [desc]) % q)
 
     lhs = (om + omp) % q
@@ -227,15 +163,13 @@ def spending_3(msg_to_merchant_epmupcoin, desc):
             ro2p * h + omp * zet2, ## problem
             mup * z + epsilonp * zet]
 
-    #rhs = test_Hash(rhs_h) % q
-
     Hstr = list(map(EcPt.export, rhs_h)) + [b'']
     Hhex = b"|".join(map(b64encode, Hstr))
     rhs = Bn.from_binary(sha256(Hhex).digest()) % q
 
     return (lhs == rhs)
 
-
+############################################################################################
 # see http://www.johannes-bauer.com/compsci/ecc/
 def eea(i, j):
     assert(isinstance(i, Bn))
@@ -252,12 +186,13 @@ def eea(i, j):
     (d, m, n) = (i, u, v)
     return (d, m, n)
     
+
 # inverse of i % q
 def inv(i, q):
     (d, m, n) = eea(q, i)
     return m
 
-
+############################################################################################
 def doublespendcalc(epsilonp, mup, epsilonp2, mup2, zet1):
     # Confirm that we can work out who the guilty party is...
     # We have (epsilonp, mup) for first validation, and (epsilonp2, mup2) for the second validation
@@ -303,18 +238,13 @@ def rev_attribute_1(Lj, gam, zet, zet1, rnd, R, att):
 
     # Wallet side calculations
     rndp = q.random()
-    #print "L2 type: " + L2.__class__.__name__ 
-    #print "gam type: " + gam.__class__.__name__
     Cp = (Lj * gam) * hs[j] + (rndp * gam) * g
     r, rp, r0, r1, r2 = [q.random() for _ in range(5)]
     rj = (r0, r1, r2)[j]
-#   new
     rgam = q.random()
 
     zet1h = r0 * hs[0] + r1 * hs[1] + r2 * hs[2] + r * g
     Cph = rj * hs[j] + rp * g
-#    c = test_Hash( [zet1, zet1h, Cp, Cph, "date/time"] )
-#   new
     # recall zet from before
     zeth = rgam * z
     hjp = gam * hs[j]
@@ -328,65 +258,36 @@ def rev_attribute_1(Lj, gam, zet, zet1, rnd, R, att):
     s2 = (r2 + c * L2   * gam) % q
     s  = (r  + c * rnd  * gam) % q
     sp = (rp + c * rndp * gam) % q
-#new
     sgam = (rgam + c * gam) % q
     # wallet now reveals Lj, zet1, zet1h, Cp, Cph, s0..s2, s, sp, sgam, zet, zeth, hjp, hjh, cljh
-    print ("c1: " + str(c))
-    print ("s1: " + str(s1))
-    print ("s2: " + str(s2))
     return (Lj, j, zet1, zet1h, Cp, Cph, s0, s1, s2, s, sp, sgam, zet, zeth, hjp, hjh, cljh)
-    
+  
+
 def rev_attribute_2(values):
     Lj, j, zet1, zet1h, Cp, Cph, s0, s1, s2, s, sp, sgam, zet, zeth, hjp, hjh, cljh = values
     
-    print ("s1: " + str(s1))
-    print ("s2: " + str(s2))
-    
     sj = (s0, s1, s2)[j]
-
-    print ("sj: " + str(sj))
 
     # Merchant/Bank side validations
     # merchant side is given all the input parameters to the hash, so no need to recalc that here - it's Fiat-Shamir
-    #print "zet1h type: " + zet1h.__class__.__name__
     
     cpdiv = Cp -(Lj * hjp)
-#    print (cpdiv == cpdiv2)
     c = test_Hash( [zet1, zet1h, Cp, Cph, "date/time", zet, zeth, hjp, hjh, cpdiv, cljh] )
-    print ("c2: " + str(c))
-
 
     lhs = zet1h + c * zet1
     rhs = s0 * hs[0] + s1 * hs[1] + s2 * hs[2] + s * g
-    print "lhs:  " + str(lhs) 
-    print "rhs:  " + str(rhs)
-    print
     
-    #print "Cph type: " + Cph.__class__.__name__
     lhs1 = Cph + c * Cp
     rhs1 = sj * hs[j] + sp * g
-    print "lhs1: " + str(lhs1)
-    print "rhs1: " + str(rhs1)
-    print
-
 
     lhs2 = zeth + c * zet
     rhs2 = sgam * z
-    print "lhs2: " + str(lhs2)
-    print "rhs2: " + str(rhs2)
-    print
 
     lhs3 = hjh + c * hjp
     rhs3 = sgam * hs[j]
-    print "lhs3: " + str(lhs3)
-    print "rhs3: " + str(rhs3)
-    print
 
     lhs4 = cljh + c * cpdiv
     rhs4 = sp * g
-    print "lhs4: " + str(lhs4)
-    print "rhs4: " + str(rhs4)
-    print
 
     a = lhs  == rhs
     b = lhs1 == rhs1
@@ -414,6 +315,7 @@ def pi_proof_wallet(C, R, L1, L2):
     pi_proof_values = c_wallet, r, a, C, Cp, L1, L2
     return pi_proof_values
 
+
 def pi_proof_bank(pi_proof_values):
     c_wallet, r, a, C, Cp, L1, L2 = pi_proof_values
 
@@ -426,13 +328,5 @@ def pi_proof_bank(pi_proof_values):
 
     lhs2 = C
     rhs2 = Cp + L1 * hs[1] + L2 * hs[2]
-
-    print ("lhs1: " + str(lhs1))
-    print ("rhs1: " + str(rhs1))
-    print
-
-    print ("lhs2: " + str(lhs2))
-    print ("rhs2: " + str(rhs2))
-    print
 
     return (lhs1 == rhs1) and (lhs2 == rhs2)
