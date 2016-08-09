@@ -1,0 +1,54 @@
+/* 
+http://tutorial.djangogirls.org/en/css/ 
+http://www.rapidtables.com/convert/color/rgb-to-hex.htm
+*/
+
+h1 {
+    color: #5F80B6;
+}
+
+body {
+    background: #E4E9EC;
+}
+
+a {
+	color: #5F80B6;
+}
+
+
+.page-header {
+    background-color: #5F80B6;
+    margin-top: 0;
+    padding: 20px 20px 20px 40px;
+}
+
+.page-header h1, .page-header h1 a, .page-header h1 a:visited, .page-header h1 a:active {
+    color: #ffffff;
+    font-size: 36pt;
+    text-decoration: none;
+}
+
+.page-header h6, .page-header h6 a, .page-header h6 a:visited, .page-header h6 a:active {
+    color: #ffffff;
+    text-decoration: none;
+    text-align: right;
+}
+
+
+#block {
+	padding: 5px;
+}
+
+
+#error_message {
+    color: red;
+}
+
+#login {
+    max-width: 500px;
+}
+
+
+#register {
+    max-width: 500px;
+}

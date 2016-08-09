@@ -78,10 +78,6 @@ def user_logout(request):
     return HttpResponseRedirect('/bank/')
 
 
-def index(request):
-    return render(request, 'bank/index.html')
-
-
 def register(request):
 	# https://docs.djangoproject.com/en/1.9/topics/forms/
     # http://www.tangowithdjango.com/book/chapters/login.html#creating-a-user-registration-view-and-template

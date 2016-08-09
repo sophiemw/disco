@@ -1,7 +1,12 @@
-<h1>Bank</h1>
+{% extends 'bank/base.html' %}
+{% block content %}
+<div id="coindestroy" class="container">
 
-<p>Do you want to convert <b>{{ num_of_coins }}</b> coins back into money?</p>
+	<h3>Confirmation of coin destroy</h3>
 
-<a href="{% url 'bank:coindestroysuccess' num_of_coins coinpk %}"><button type="button">YES</button></a> 
+	<p>Do you want to convert <b>{{ num_of_coins }}</b> coins back into money?</p>
 
+	<a href="{% url 'bank:coindestroysuccess' num_of_coins coinpk %}"><button type="button" class="btn btn-primary btn-large btn-block">YES</button></a> 
 
+</div>
+{% endblock %}

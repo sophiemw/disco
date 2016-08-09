@@ -1,14 +1,25 @@
-<h1>Sign up</h1>
+{% extends 'bank/base.html' %}
+{% block content %}
+<div id="register" class="container">
+	<div class="well well-small">
 
-{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+	<h2>Sign up</h2>
 
-<form action="{% url 'bank:register' %}" method="post">
-{% csrf_token %}
-  
-  <table>
-    {{ form.as_table }}
-  </table>
+	{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 
-<br>
-<input type="submit" value="Create Account"/>
-</form>
+	{% load bootstrap3 %}
+
+	<form action="{% url 'bank:register' %}" method="post">
+	{% csrf_token %}
+	  
+        {% bootstrap_form form %}
+        {% buttons %}
+            <button type="submit" class="btn btn-primary">
+                Create Account
+            </button>
+		{% endbuttons %}
+	</form>
+
+	</div>
+</div>
+{% endblock %}

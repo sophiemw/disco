@@ -31,6 +31,8 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'bootstrap3',
+#    'django_nose',
     'bank.apps.BankConfig',
     'django.contrib.admin',
     'django.contrib.auth',
