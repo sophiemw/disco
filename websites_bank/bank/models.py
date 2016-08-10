@@ -25,15 +25,6 @@ class UserProfile(models.Model):
     		str(self.balance)
 		])
 
-    def __unicode__(self):
-        return ' '.join([
-            str(self.user.username),
-            str(self.user.first_name),
-            str(self.user.last_name),
-            str(self.user.email),
-            str(self.balance)
-        ])
-
 
 @python_2_unicode_compatible  # only if you need to support Python 2
 class CoinValidation(models.Model):

@@ -130,3 +130,12 @@ SESSION_COOKIE_PATH='/bank'
 WALLET_URL = 'http://192.168.33.10:8000/wallet'
 MERCHANT_URL = 'http://192.168.33.10:8080/merchant'
 BANK_URL = 'http://192.168.33.10:8090/bank'
+
+# Use nose to run all tests
+#TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
+
+# Tell nose to measure coverage on the 'foo' and 'bar' apps
+#NOSE_ARGS = [
+#    '--with-coverage',
+#    '--cover-package=bank',
+#]

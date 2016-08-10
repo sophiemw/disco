@@ -1,11 +1,7 @@
-from decimal import *
-
-from django.test import TestCase
-
-#from bank.models import User
 from django.contrib.auth.models import User
+from django.test import Client, TestCase
 
-from bank.forms import GetCoinForm
+from bank.forms import RegisterForm
 from bank.models import UserProfile
 
 TEST_USER = {"username": "username",
@@ -28,7 +24,6 @@ class UserTests(TestCase):
             password=TEST_USER['password'], 
             first_name=TEST_USER['first_name'], 
             last_name=TEST_USER['last_name'],
-            #balance=TEST_USER['balance']
             )
         profile = UserProfile(user_id=user.id, balance=TEST_USER['balance'])
         profile.save()
@@ -42,17 +37,12 @@ class UserTests(TestCase):
         # 	email='test@test.com'
         # 	)
 
-        print("TEST_USER= " + str(TEST_USER))
-
         ##profile = UserProfile.objects.get(user=TEST_USER['username'])
         u = User.objects.get(username=TEST_USER['username'])
-        print("U is: " + str(u))
 
         #profile = UserProfile.objects.get(user_id=u.id)
         #p = request.User.profile
         p = UserProfile(user=u, balance=TEST_USER['balance'])
-
-        #print("P is : " + str(p))
 
         self.assertEquals(
             str(p),
@@ -69,69 +59,220 @@ class UserTests(TestCase):
 
         self.assertTrue(did_login_succeed)
 
+
+    def test_unsuccessful_login(self):
+        """Test that a user needs to have an existing account"""
+        did_login_succeed = self.client.login(
+            username='dummyusername',
+            password=TEST_USER['password'])
+
+        self.assertFalse(did_login_succeed)
+
+
+    def test_new_user(self):
+        """Test creating a user has default balance of 20"""
+        c = Client()
+        c.post('/bank/register/', {
+            "username": "usernam2e",
+            "password1": "johnpassword",
+            "password2": "johnpassword",
+            "email": "test@test.com",
+            "first_name": "John",
+            "last_name": "Smith"
+            })
+
+        u = User.objects.get(username='usernam2e')
+
+        self.assertEquals(20, u.profile.balance)
+
+    def test_new_user_different_password(self):
+        """Test user creation if bad passwords"""
+        form = RegisterForm({
+            "username": "usernam2e",
+            "password1": "johnpassword",
+            "password2": "johnpassword2",
+            "email": "test@test.com",
+            "first_name": "John",
+            "last_name": "Smith"
+            })
+        self.assertFalse(form.is_valid())
+
+
+    def test_empty_registerform(self):
+        """Test user creation if empty form"""
+        form = RegisterForm({})
+        self.assertFalse(form.is_valid())
+
+
 class CoinCreationTests(TestCase):
-    """Coin creation tests"""
-    # http://toastdriven.com/blog/2011/apr/17/guide-to-testing-in-django-2/
+    """Tests around coin creation"""
+
+    def test_make_coins_not_enough_money(self):
+        """Testing to make sure that a client cannot create more coins than they have money"""
+        c = Client()
+        c.post('/bank/register/', {
+            "username": "usernam2e",
+            "password1": "johnpassword",
+            "password2": "johnpassword",
+            "email": "test@test.com",
+            "first_name": "John",
+            "last_name": "Smith"
+            })
+        response = c.get('/bank/confirmcoincreation/21/')
+
+        self.assertEquals(str(response.content), "Bank: Cannot create coins - insufficient funds")
 
 
-    def setUp(self):
-        #create_user(username, email=None, password=None, **extra_fields)
-        self.user = User.objects.create_user(
-            username=TEST_USER['username'], 
-            email=TEST_USER['email'], 
-            password=TEST_USER['password'], 
-            first_name=TEST_USER['first_name'], 
-            last_name=TEST_USER['last_name'],
-            )
-        profile = UserProfile(user_id=self.user.id, balance=TEST_USER['balance'])
-        profile.save()
+    def test_make_coins_enough_money(self):
+        """Testing to make sure that a client cannot create more coins than they have money"""
+        c = Client()
+        c.post('/bank/register/', {
+            "username": "usernam2e",
+            "password1": "johnpassword",
+            "password2": "johnpassword",
+            "email": "test@test.com",
+            "first_name": "John",
+            "last_name": "Smith"
+            })
+        response = c.get('/bank/confirmcoincreation/1/')
 
-    def test_cannot_submit_with_no_coin(self):
-        """User cannot convert 0 coins"""
-        form = GetCoinForm({
-            'coinnum': 0
-        })
-        self.assertFalse(form.is_valid())
-        #self.assertEqual(
-        #    form.errors['coinnum'],
-        #    ["You can't make zero coins"]
-        #)
-
-    def test_cannot_submit_not_a_number(self):
-        """User cannot convert an amount of coins which is not a number"""
-        form = GetCoinForm({
-            'coinnum': "asd"
-        })
-        self.assertFalse(form.is_valid())
-
-#    def test_coin_less_than_balance(self):
-#        """User must choose an amount of coins less than their balance"""
-#        form = GetCoinForm({
-#            'user': self.user.username,
-#            'balance': self.user.profile.balance,
-#            'coinnum': 1.00
-#            })
-
-#        print ("users balance is :" + str(self.user.profile.balance - Decimal(1.00)))
-
-#        self.assertTrue(form.is_valid())
+        self.assertEqual(response.status_code, 302)
 
 
- #   def test_coin_greater_than_balance(self):
-#        """User cannot create more coins than they have balance"""
-        #u = User.objects.get(username=TEST_USER['username'])
-        #p = UserProfile(user=u, balance=TEST_USER['balance'])
-#        form = GetCoinForm({
-#            'user': self.user.username,
-#            'balance': self.user.profile.balance,
-#            'coinnum': 50
-#        })
+    def test_coincreation_login(self):
+        c = Client()
+        c.post('/bank/register/', {
+            "username": "username2",
+            "password1": "johnpassword",
+            "password2": "johnpassword",
+            "email": "test@test.com",
+            "first_name": "John",
+            "last_name": "Smith"
+            })
+        self.assertTrue(c.login(username='username2', password='johnpassword'))
 
-#        print ("self.user: " + str(self.user.profile.balance))
+        response = c.get('/bank/coincreation/5/')
 
-        #cleanform = form.is_valid()
-        #u = self.setUp
-#        self.assertFalse(form.is_valid())
-        #self.assertFalse(form.user.validate_balance_positive())
+        self.assertEqual(response.status_code, 200)
+
+
+class BankViewsTestCase(TestCase):
+    """Tests around views"""
+
+    def test_homepage_not_login(self):
+        """If a user is not logged in they cannot see the homepage"""
+        response = self.client.get('/bank/')
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, "/bank/login/?next=/bank/")
+
+
+    def test_homepage_login(self):
+        """If a user is logged in they can see the homepage"""
+        
+        c = Client()
+        c.post('/bank/register/', {
+            "username": "username1",
+            "password1": "johnpassword",
+            "password2": "johnpassword",
+            "email": "test@test.com",
+            "first_name": "John",
+            "last_name": "Smith"
+            })
+        resp = c.get('/bank/')
+        self.assertEqual(resp.status_code, 200)
+#        self.assertTrue(c.login(username='username1', password='johnpassword'))
+
+        #http://stackoverflow.com/questions/5660952/test-that-user-was-logged-in-successfully/35871564#35871564
+        # djangos login function logs the user in
+        self.assertIn('_auth_user_id', c.session)
+
+
+
+    def test_register(self):
+        resp = self.client.get('/bank/register/')
+        self.assertEqual(resp.status_code, 200)
+
+
+    def test_logout(self):
+        c = Client()
+        c.post('/bank/register/', {
+            "username": "username2",
+            "password1": "johnpassword",
+            "password2": "johnpassword",
+            "email": "test@test.com",
+            "first_name": "John",
+            "last_name": "Smith"
+            })
+
+        resp = c.get('/bank/')
+        self.assertEqual(resp.status_code, 200)
+
+ #       print (c.session['_auth_user_id'])
+        response = c.get('/bank/logout/')
+        self.assertNotIn('_auth_user_id', c.session)
+#        print c.session['_auth_user_id']
+
+        self.assertEqual(response.status_code, 302)
+#        self.assertEqual(c.session['_auth_user_id'], [])
+#        self.assertFalse(c.login(username='username2', password='johnpassword'))
+
+
+    def test_login_form_good(self):
+        c = Client()
+        c.post('/bank/register/', {
+            "username": "username2",
+            "password1": "johnpassword",
+            "password2": "johnpassword",
+            "email": "test@test.com",
+            "first_name": "John",
+            "last_name": "Smith"
+            })
+
+        response = c.post('/bank/login/', {
+            "username": "username2",
+            "password": "johnpassword",
+            })
+
+        # http://stackoverflow.com/questions/5660952/test-that-user-was-logged-in-successfully/35871564#35871564
+        #self.assertTrue(response.context['request'].user.is_authenticated())
+
+        self.assertTrue(c.login(username='username2', password='johnpassword'))
+
+    def test_login_form_good_redirect(self):
+        c = Client()
+        c.post('/bank/register/', {
+            "username": "username2",
+            "password1": "johnpassword",
+            "password2": "johnpassword",
+            "email": "test@test.com",
+            "first_name": "John",
+            "last_name": "Smith"
+            })
+
+        response = c.post('/bank/login/?next=/bank/homepage/', {
+            "username": "username2",
+            "password": "johnpassword",
+            })
+
+        self.assertEqual(response.status_code, 302)
+
+
+    def test_login_form_bad(self):
+
+        c = Client()
+        c.post('/bank/register/', {
+            "username": "username2",
+            "password1": "johnpassword",
+            "password2": "johnpassword",
+            "email": "test@test.com",
+            "first_name": "John",
+            "last_name": "Smith"
+            })
+
+        response = c.post('/bank/login/', {
+            "username": "username2",
+            "password": "johnpassword2",
+            })
+        self.assertFalse(c.login(username='username1', password='johnpassword2'))
 
 
