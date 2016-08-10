@@ -6,7 +6,9 @@ from merchant.models import Category, Items
 
 import BLcred, blshim
 
-import requests
+import time, requests
+
+fo = open("timings_merchant.csv", "a", 0)
 
 def index(request):
 	return HttpResponseRedirect('/merchant/homepage/?category=')
@@ -48,10 +50,15 @@ def itemsuccess(request):
 	item = get_object_or_404(Items, pk=item_id)
 
 	im = "merchantbankaccount"
+	start = time.time()
 	desc = blshim.spending_1(im)
+	fo.write("blshim.spending_1, " + str(time.time() - start) + "\n")
+	
 	serialised_entry = blshim.serialise((desc, sessionid, im))
 
+	start = time.time()
 	r = requests.get(settings.WALLET_URL + '/ws_coin_list/?entry=%s' %(serialised_entry))
+	fo.write("wallet/ws_coin_list, " + str(time.time() - start) + "\n")
 	c = r.content
 
 	valid, error_reason, list_of_msgs = blshim.deserialise(c)
@@ -61,7 +68,10 @@ def itemsuccess(request):
 
 		# sending all coins to the bank at once
 		entry = blshim.serialise((list_of_msgs, desc, im, item.price))
+
+		start = time.time()
 		r = requests.get(settings.BANK_URL + '/ws_spend_reveal/?entry=%s' %(entry))
+		fo.write("bank/ws_spend_reveal, " + str(time.time() - start) + "\n")
 		c = r.content
  
 		valid, error_reason = blshim.deserialise(c)

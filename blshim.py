@@ -1,4 +1,4 @@
-import datetime, base64, json
+import time, datetime, base64, json
 import BLcred
 from petlib.bn import Bn
 from petlib.ec import EcGroup, EcPt
@@ -87,8 +87,10 @@ def readIssuerKeys():
 
     return (x, y)
 
+
 if __name__ != "__main__":    
     (x, y) = readIssuerKeys()
+    
     
 if __name__ == "__main__":
     print("This is run standalone to create the issuer key files ...")
@@ -330,3 +332,26 @@ def pi_proof_bank(pi_proof_values):
     rhs2 = Cp + L1 * hs[1] + L2 * hs[2]
 
     return (lhs1 == rhs1) and (lhs2 == rhs2)
+
+
+def test_invPerformance():
+    G = EcGroup(713)
+    q = G.order()
+    
+    n = 1000
+    
+    
+    start = time.clock()
+    for i in range(0, n):
+        r = q.random()
+        inverse = r.mod_inverse(q)    
+    print "Bn impl:     " + str(time.clock() - start)
+    
+    start = time.clock()
+    for i in range(0, n):
+        r = q.random()
+        inverse = inv(r, q)
+    print "python impl: " + str(time.clock() - start)
+
+#if __name__ == "__main__":
+#    test_invPerformance()

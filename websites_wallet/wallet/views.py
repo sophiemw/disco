@@ -13,8 +13,9 @@ from wallet.models import PaymentSession, Coins
 
 import BLcred, blshim
 
-import requests, datetime
+import time, requests, datetime
 
+fo = open("timings_wallet.csv", "a", 0)
 
 def user_login(request):
     # http://stackoverflow.com/questions/16750464/django-redirect-after-login-not-working-next-not-posting
@@ -157,14 +158,21 @@ def create_coins(request, coinnum, sessionid, user):
     if user.username == "expiredspender":
         expirydate = now.year - 2
 
+    start = time.time()
     LT_user_state, user_commit = BLcred.BL_user_setup(blshim.params, [coinnum, expirydate])
+    fo.write("BLcred.BL_user_setup, " + str(time.time() - start) + "\n")
 
     (C, ) = user_commit
-    pi_proof_values = blshim.pi_proof_wallet(C, LT_user_state.R, coinnum, expirydate)
 
+    start = time.time()
+    pi_proof_values = blshim.pi_proof_wallet(C, LT_user_state.R, coinnum, expirydate)
+    fo.write("blshim.pi_proof_wallet, " + str(time.time() - start) + "\n")    
+    
     s_entry = blshim.serialise((pi_proof_values, user_commit, sessionid, coinnum, expirydate))
 
+    start = time.time()
     r = requests.get(settings.BANK_URL + '/ws_preparation_validation_1/?serialised_entry=%s' %(s_entry))
+    fo.write("bank/ws_preparation_validation_1, " + str(time.time() - start) + "\n")
     c = r.content
 
     (valid, results) = blshim.deserialise(c)
@@ -172,23 +180,33 @@ def create_coins(request, coinnum, sessionid, user):
     if valid:
         rnd, aap = results
 
+        start = time.time()
         BLcred.BL_user_preparation(LT_user_state, rnd)
+        fo.write("BLcred.BL_user_preparation, " + str(time.time() - start) + "\n")   
 
+        start = time.time()
         msg_to_issuer_e = epsilon = BLcred.BL_user_validation(LT_user_state, (blshim.y, ), aap)
+        fo.write("BLcred.BL_user_validation, " + str(time.time() - start) + "\n")  
 
         # new webservice here
         # sending e
         s_entry = blshim.serialise((msg_to_issuer_e, user_commit, sessionid))
         
+        start = time.time()
         r = requests.get(settings.BANK_URL + '/ws_validation_2/?serialised_entry=%s' %(s_entry))
+        fo.write("bank/ws_validation_2, " + str(time.time() - start) + "\n")
         c = r.content
 
         msg_to_user_crcprp = blshim.deserialise(c)
 
+        start = time.time()
         signature = BLcred.BL_user_validation2(LT_user_state, msg_to_user_crcprp)
+        fo.write("BLcred.BL_user_validation2, " + str(time.time() - start) + "\n")  
 
         ##VALIDATION THAT THE COIN IS VALID
+        start = time.time()
         b = BLcred.BL_check_signature(blshim.params, (blshim.y, ), signature)
+        fo.write("BLcred.BL_check_signature, " + str(time.time() - start) + "\n")
 
         # Saving the coin into the DB
         # signature and coins are different - mu
@@ -282,16 +300,22 @@ def ws_coin_list(request):
             code_rnd_tau_gam_R_att = c.serialised_code_rnd_tau_gam_R_att
             coin, rnd, tau, gam, R, att = blshim.deserialise(code_rnd_tau_gam_R_att)
             # run spending_2 on each coin
+            start = time.time()
             msg_to_merchant_epmupcoin = blshim.spending_2(tau, gam, coin, desc)
+            fo.write("blshim.spending_2, " + str(time.time() - start) + "\n")
 
             (m, zet, zet1, zet2, om, omp, ro, ro1p, ro2p) = coin
 
             # table 8, revealing attributes for each coin
             # first check each coin is the value it says it is
+            start = time.time()
             amount_rev_values = blshim.rev_attribute_1("amount", gam, zet, zet1, rnd, R, att)
+            fo.write("blshim.rev_attribute_1, " + str(time.time() - start) + "\n")
 
             # now check the coin is within its expiry date
+            start = time.time()
             expiry_rev_values = blshim.rev_attribute_1("expirydate", gam, zet, zet1, rnd, R, att)
+            fo.write("blshim.rev_attribute_1, " + str(time.time() - start) + "\n")
 
             list_of_msgs.append((msg_to_merchant_epmupcoin, amount_rev_values, expiry_rev_values, c.value_of_coin, c.expirydate))
 

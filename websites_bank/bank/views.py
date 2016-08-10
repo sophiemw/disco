@@ -14,7 +14,9 @@ from bank.models import UsersWhoHaveDoubleSpent, DoubleSpendingCoinHistory, Doub
 
 import blshim, BLcred
 
-import datetime
+import time, datetime
+
+fo = open("timings_bank.csv", "a", 0)
 
 def user_login(request):
     # http://stackoverflow.com/questions/16750464/django-redirect-after-login-not-working-next-not-posting
@@ -156,15 +158,24 @@ def ws_preparation_validation_1(request):
 
     # Standard non-interactive proof of knowledge - pi proof
     # validation that the coin value and expiry date have been set correctly by the wallet
-    if blshim.pi_proof_bank(pi_proof_values):
+    start = time.time()
+    pi_proof_bank = blshim.pi_proof_bank(pi_proof_values)
+    fo.write("blshim.pi_proof_bank, " + str(time.time() - start) + "\n")
+
+    if pi_proof_bank:
+        start = time.time()
         LT_issuer_state = blshim.create_issuer_state()
+        fo.write("blshim.create_issuer_state, " + str(time.time() - start) + "\n")
 
+        start = time.time()
         msg_to_user_rnd = BLcred.BL_issuer_preparation(LT_issuer_state, real_C)
-        print("msg_to_user_rnd: " + str(msg_to_user_rnd))
-
+        fo.write("BLcred.BL_issuer_preparation, " + str(time.time() - start) + "\n")
+        
         # VALIDATION STAGE 1 - BL_issuer_validation
+        start = time.time()
         msg_to_user_aap = BLcred.BL_issuer_validation(LT_issuer_state)
-
+        fo.write("BLcred.BL_issuer_validation, " + str(time.time() - start) + "\n")
+        
         results = msg_to_user_rnd, msg_to_user_aap
 
         # can't easily use sessions - browsers
@@ -193,11 +204,15 @@ def ws_validation_2(request):
 
     # need to deduct the money from the user's account
     # and confirm the number of coins requested is the same as that approved earlier 
+    start = time.time()
     LT_issuer_state =  blshim.create_issuer_state()
+    fo.write("blshim.create_issuer_state, " + str(time.time() - start) + "\n")
 
     LT_issuer_state.cp, LT_issuer_state.u, LT_issuer_state.r1p, LT_issuer_state.r2p = blshim.deserialise(db.jsonstring)
 
+    start = time.time()
     msg_to_user_crcprp = BLcred.BL_issuer_validation_2(LT_issuer_state, real_e)
+    fo.write("BLcred.BL_issuer_validation_2, " + str(time.time() - start) + "\n")
 
     # updating user's balance
     u = db.user
@@ -226,8 +241,10 @@ def ws_spend_reveal(request):
     for coin_with_reveals in list_of_msgs:
         msg_to_merchant_epmupcoin, amount_rev_values, expiry_rev_values, value_of_coin, expirydate = coin_with_reveals
 
+        start = time.time()
         valid_3 = blshim.spending_3(msg_to_merchant_epmupcoin, desc)
-
+        fo.write("blshim.spending_3, " + str(time.time() - start) + "\n")
+        
         if valid_3:
             # double spending checks here
             (epsilonp, mup, coin) = msg_to_merchant_epmupcoin
@@ -241,7 +258,10 @@ def ws_spend_reveal(request):
 
                 (m, zet, zet1, zet2, om, omp, ro, ro1p, ro2p) = coin
 
-                z1calc = blshim.doublespendcalc(epsilonp, mup, epsilonp2, mup2, zet1)         
+                start = time.time()
+                z1calc = blshim.doublespendcalc(epsilonp, mup, epsilonp2, mup2, zet1)
+                fo.write("blshim.doublespendcalc, " + str(time.time() - start) + "\n")
+                         
                 z1calc_s = blshim.serialise(z1calc)
 
                 # now we look z1calc in DoubleSpendingz1Touser to find the user..
@@ -262,10 +282,13 @@ def ws_spend_reveal(request):
                 list_of_coins_to_put_in_db.append((serialise_coin, serialised_entry))
 
                 # check coin's attributes - value, expiry date
+                start = time.time()
                 coin_value_valid, Lj_value = blshim.rev_attribute_2(amount_rev_values)
-                print ("value: " + str(coin_value_valid))
+                fo.write("blshim.rev_attribute_2, " + str(time.time() - start) + "\n")
+
+                start = time.time()
                 coin_expiry_valid, Lj_expirydate = blshim.rev_attribute_2(expiry_rev_values)
-                print ("expiry: " + str(coin_expiry_valid))
+                fo.write("blshim.rev_attribute_2, " + str(time.time() - start) + "\n")
 
                 if coin_value_valid:
                     valid = Lj_value == value_of_coin
