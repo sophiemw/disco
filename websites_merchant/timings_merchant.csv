@@ -96,3 +96,11 @@ wallet/ws_coin_list, 0.38151216507
 bank/ws_spend_reveal, 0.722742080688
 blshim.spending_1, 0.0011830329895
 wallet/ws_coin_list, 0.165105819702
+blshim.spending_1, 0.00310301780701
+wallet/ws_coin_list, 0.285495996475
+blshim.spending_1, 0.00132513046265
+wallet/ws_coin_list, 0.233015060425
+bank/ws_spend_reveal, 0.426717042923
+blshim.spending_1, 0.0018298625946
+wallet/ws_coin_list, 0.232924938202
+bank/ws_spend_reveal, 0.397588968277
