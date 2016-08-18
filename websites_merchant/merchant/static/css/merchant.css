@@ -1,0 +1,73 @@
+/* http://tutorial.djangogirls.org/en/css/ */
+h1 {
+    color: #FCA205;
+}
+
+body {
+    background: #ddd;
+}
+
+a {
+	color: #B74934;
+}
+
+.page-header {
+    background-color: #B74934;
+    margin-top: 0;
+    padding: 20px 20px 20px 40px;
+}
+
+.page-header h1, .page-header h1 a, .page-header h1 a:visited, .page-header h1 a:active {
+    color: #ffffff;
+    font-size: 36pt;
+    text-decoration: none;
+}
+
+#index {
+	padding: 5px;
+	max-width: 800px;
+}
+
+#index table {
+	margin-left:auto; 
+ 	margin-right:auto;
+    background-color: white;
+	box-shadow: 0 3px 6px #999;
+	border: 20px solid white;
+	width:500px;
+	table-layout: fixed;
+}
+
+#index .categories {
+	width: 30%; 
+	padding: 15px;
+	float:left;
+}
+
+#index .all-items {
+	width: 70%; 
+	padding: 15px;
+	float:left;
+}
+
+
+#itemdetail {
+	padding: 5px;
+	max-width: 800px;
+}
+
+#itemdetail th, td {
+	padding: 5px;
+}
+
+
+#itembuying {
+	padding: 5px;
+	max-width: 800px;
+}
+
+
+#itemsuccess2 {
+	padding: 5px;
+	max-width: 800px;
+}

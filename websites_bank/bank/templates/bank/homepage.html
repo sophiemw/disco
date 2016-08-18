@@ -1,10 +1,14 @@
-<h1>Bank homepage</h1>
+{% extends 'bank/base.html' %}
+{% block content %}
+<div id="homepage">    
 
-<h2>Hi {{ user.first_name }} {{ user.last_name }}</h2>
+	<h2>Homepage</h2>
 
-<a href="{% url 'bank:logout' %}">Logout</a><br>
+	<h3>Hi {{ user.first_name }} {{ user.last_name }}</h3>
 
-<?-- http://stackoverflow.com/questions/26282845/userprofileuser-id-2-returns-userprofile-user-but-userprofileuser-id-2-b?>
+	<?-- http://stackoverflow.com/questions/26282845/userprofileuser-id-2-returns-userprofile-user-but-userprofileuser-id-2-b?>
 
-<p>Your balance is {{ request.user.profile.balance }}.</p>
+	<p>Your balance is <b>£{{ request.user.profile.balance }}</b>.</p>
 
+</div>
+{% endblock %}

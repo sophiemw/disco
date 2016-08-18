@@ -1,24 +1,31 @@
-<h1>Merchant - item page</h1>
+{% extends 'merchant/base.html' %}
+{% block content %}
+<div id="itemdetail">
 
-<table>
-	<tr>
-		<td colspan="2"><b>{{ item.title }}</b></td>
-	</tr>
-	<tr>
-		<td rowspan="3"><img src="/{{ item.image.url }}" alt="itempic"></td>
-		<td>Price in coins: {{ item.price }}</td>
-	</tr>
-	<tr>
-		<td><a href="{% url 'merchant:itembuying' item.id %}"><button type="button">BUY</button></a></td>
-	</tr>
-	<tr>
-		<td rowspan="2">{{ item.description }}</td>
-	</tr>
-	<tr>
-		<td>
-			{% for t in item.tags.all %}
-				{{ t }},
-			{% endfor %}
-		</td>
-	</tr>
-</table>
+	<h2>Item page</h2>
+
+	<table>
+		<tr>
+			<td colspan="2"><h3>{{ item.title }}</h3></td>
+		</tr>
+		<tr>
+			<td rowspan="3"><img src="/{{ item.image.url }}" alt="itempic"></td>
+			<td><b>Price in coins:</b> {{ item.price }}</td>
+		</tr>
+		<tr>
+			<td><a href="{% url 'merchant:itembuying' item.id %}"><button class="btn btn-danger btn-large" type="button">BUY</button></a></td>
+		</tr>
+		<tr>
+			<td rowspan="2">{{ item.description }}</td>
+		</tr>
+		<tr>
+			<td><i>
+				{% for t in item.tags.all %}
+					{{ t }},
+				{% endfor %}
+			</i></td>
+		</tr>
+	</table>
+
+</div>
+{% endblock %}

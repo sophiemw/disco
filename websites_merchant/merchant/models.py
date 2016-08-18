@@ -11,6 +11,7 @@ class Category(models.Model):
 	def __str__(self):
 		return self.tag
 
+
 # https://coderwall.com/p/bz0sng/simple-django-image-upload-to-model-imagefield
 # https://docs.djangoproject.com/en/1.9/intro/tutorial06/
 # http://stackoverflow.com/questions/1950069/suspicious-operation-django
@@ -23,7 +24,3 @@ class Items(models.Model):
 
 	def __str__(self):
 		return self.title
-
-#class ItemCategory(models.Model):
-#	item = models.ForeignKey(Items, on_delete=models.CASCADE)
-#	itemcat = models.ForeignKey(Category, on_delete=models.CASCADE)

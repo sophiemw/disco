@@ -1,5 +1,6 @@
-<h1>wallet</h1>
+{% extends 'wallet/base.html' %}
+{% block content %}
 
-{{ num_of_coins }} coins created successfully<br><br>
+	<p><b>{{ num_of_coins }}<b> coins created successfully</p>
 
-<a href="{% url 'wallet:homepage' %}">Homepage</a><br>
+{% endblock %}

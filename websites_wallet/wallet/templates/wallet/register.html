@@ -1,0 +1,26 @@
+{% extends 'wallet/base.html' %}
+{% block content %}
+<div id="register" class="container">
+	<div class="well well-small">
+
+	<h2>Sign up</h2>
+
+	{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+
+	{% load bootstrap3 %}
+
+	<form action="{% url 'wallet:register' %}" method="post">
+	{% csrf_token %}
+	  
+        {% bootstrap_form form %}
+        {% buttons %}
+            <button type="submit" class="btn btn-success">
+                Create Account
+            </button>
+		{% endbuttons %}
+	</form>
+
+	</div>
+</div>
+
+{% endblock %}

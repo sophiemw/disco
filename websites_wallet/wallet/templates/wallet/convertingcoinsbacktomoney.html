@@ -1,7 +1,12 @@
-<h1>Wallet</h1>
+{% extends 'wallet/base.html' %}
+{% block content %}
+<div id="convertingcoinsbackintomoney">
 
-<p>Number of coins to be turned back into money: <b>{{ coinnum }}</b></p>
+	<p>Number of coins to be turned back into money: <b>{{ coinnum }}</b></p>
 
-<iframe src="{{ BANK_URL }}/coindestroy/{{ coinnum }}" width="400" height="300"></iframe>
+	<iframe src="{{ BANK_URL }}/coindestroy/{{ coinnum }}/{{ coinpk }}" width="400" height="300"></iframe>
 
-{# {% url 'wallet:coindestroysuccess2' num_of_coins %} #}
+	{# {% url 'wallet:coindestroysuccess2' num_of_coins %} #}
+
+</div>
+{% endblock %}

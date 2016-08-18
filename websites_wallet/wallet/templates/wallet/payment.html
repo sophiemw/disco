@@ -1,9 +1,12 @@
-<h1>Wallet</h1>
+{% extends 'wallet/base.html' %}
+{% block content %}
+<div id="payment">
 
-<p>Do you want to:<br>
-	Pay <b>{{ user_getting_money.username }}</b><br>
-	Amount: <b>{{ payment_amount }}</b> coins<br>
-	?</p>
+	<p>Do you want to pay <b>{{ user_getting_money.username }}</b><br>
+		Amount: <b>{{ payment_amount }}</b> coins?</p>
 
-<a href="{{ MERCHANT_URL }}/success/?entry={{ serialised_entry }}"><button type="button">YES</button></a> 
-<a href="{{ MERCHANT_URL }}/{{ item_id }}/" target="_parent"><button type="button">NO - take me back</button></a> 
+	<a href="{{ MERCHANT_URL }}/success/?entry={{ serialised_entry }}"><button type="button">YES</button></a> 
+	<a href="{{ MERCHANT_URL }}/{{ item_id }}/" target="_parent"><button type="button">NO - take me back</button></a> 
+
+</div>
+{% endblock %}

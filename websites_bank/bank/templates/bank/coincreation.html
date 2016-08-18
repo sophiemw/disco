@@ -1,7 +1,12 @@
-<h1>Bank</h1>
+{% extends 'bank/base.html' %}
+{% block content %}
+<div id="coincreation" class="container">
 
-<p>Confirmation of coin creation</p>
+	<h3>Confirmation of coin creation</h3>
 
-<p><b>{{ num_of_coins }}</b> coins to be made</p>
+	<p><b>{{ num_of_coins }}</b> coins to be made</p>
 
-<a href="{% url 'bank:confirmcoincreation' num_of_coins %}"><button type="button">YES</button></a>
+	<a href="{% url 'bank:confirmcoincreation' num_of_coins %}"><button class="btn btn-primary btn-large btn-block" type="button">YES</button></a>
+
+</div>
+{% endblock %}

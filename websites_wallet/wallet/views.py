@@ -8,59 +8,23 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.template import RequestContext
 
-from wallet.forms import GetCoinForm, SignupForm
+from wallet.forms import GetCoinForm, RegisterForm
 from wallet.models import PaymentSession, Coins
 
 import BLcred, blshim
 
-import requests, datetime
+import time, requests, datetime
 
+fo = open("timings_wallet.csv", "a", 0)
 
-def index(request):
-    return render(request, 'wallet/index.html')
-
-
-def signup(request):
-	# https://docs.djangoproject.com/en/1.9/topics/forms/
-    # http://www.tangowithdjango.com/book/chapters/login.html#creating-a-user-registration-view-and-template
-	# http://stackoverflow.com/questions/8917185/in-django-when-i-call-user-objects-create-userusername-email-password-why
-
-    # if this is a POST request we need to process the form data
-    if request.method == 'POST':
-        # create a form instance and populate it with data from the request:
-        form = SignupForm(request.POST)
-        # check whether it's valid:
-        if form.is_valid():
-			# process the data in form.cleaned_data as required
-
-            new_user = User.objects.create_user(
-                username=form.cleaned_data['username'],  
-                password=form.cleaned_data['password1'])
-            new_user.save()
-
-            if new_user is not None:
-                login(request, new_user)
-
-            # redirect to a new URL:
-            return HttpResponseRedirect('/wallet/')
-            
-    # if a GET (or any other method) we'll create a blank form
-    else:
-        form = SignupForm()
-
-    return render(request, 'wallet/signup.html', {'form': form})
-
-
-def userlogin(request):
+def user_login(request):
     # http://stackoverflow.com/questions/16750464/django-redirect-after-login-not-working-next-not-posting
-    # Like before, obtain the context for the user's request.
+    # Obtain the context for the user's request.
     context = RequestContext(request)
 
     next = ""
     if request.GET:  
-        #        print("!!!TEST: " + next)
         next = request.GET['next']
-        #        print("!!!TEST22: " + next)
 
     # If the request is a HTTP POST, try to pull out the relevant information.
     if request.method == 'POST':
@@ -92,7 +56,7 @@ def userlogin(request):
         else:
             # Bad login details were provided. So we can't log the user in.
             print "Invalid login details: {0}, {1}".format(username, password)
-            return HttpResponse("Invalid login details supplied.")
+            return render(request, 'wallet/login.html', {'next':next, 'error_message': "Invalid login details supplied."})
 
     # The request is not a HTTP POST, so display the login form.
     # This scenario would most likely be a HTTP GET.
@@ -104,15 +68,45 @@ def userlogin(request):
 
 
 @login_required
-def userlogout(request):
-	logout(request)
-	return HttpResponseRedirect('/wallet/')
+def user_logout(request):
+    logout(request)
+    return HttpResponseRedirect('/wallet/')
+
+
+def register(request):
+	# https://docs.djangoproject.com/en/1.9/topics/forms/
+    # http://www.tangowithdjango.com/book/chapters/login.html#creating-a-user-registration-view-and-template
+	# http://stackoverflow.com/questions/8917185/in-django-when-i-call-user-objects-create-userusername-email-password-why
+
+    # if this is a POST request we need to process the form data
+    if request.method == 'POST':
+        # create a form instance and populate it with data from the request:
+        form = RegisterForm(request.POST)
+        # check whether it's valid:
+        if form.is_valid():
+			# process the data in form.cleaned_data as required
+
+            new_user = User.objects.create_user(
+                username=form.cleaned_data['username'],  
+                password=form.cleaned_data['password1'])
+            new_user.save()
+
+            if new_user is not None:
+                login(request, new_user)
+
+            # redirect to a new URL:
+            return HttpResponseRedirect('/wallet/')
+            
+    # if a GET (or any other method) we'll create a blank form
+    else:
+        form = RegisterForm()
+
+    return render(request, 'wallet/register.html', {'form': form})
 
 
 @login_required
 def homepage(request):
     # http://stackoverflow.com/questions/17754295/can-i-have-a-django-form-without-model
-    
     if request.method == 'POST':
         form = GetCoinForm(request.POST)
         if form.is_valid():
@@ -127,9 +121,7 @@ def homepage(request):
     else:
         form = GetCoinForm()
 
-    print(request.user)
     users_coins = Coins.objects.filter(user=request.user)
-    #print(users_coins)
     context = {
         'form': form,
         'users_coins': users_coins
@@ -137,11 +129,13 @@ def homepage(request):
     return render(request, 'wallet/homepage.html', context)
 
 
+#########################################################################################
+# User - coin creation
 @login_required
 def coinsuccess(request):
     num_of_coins, sessionid = blshim.deserialise(request.GET.get('entry'))
 
-    valid = testcoincreation(request, num_of_coins, sessionid, request.user)
+    valid = create_coins(request, num_of_coins, sessionid, request.user)
 
     if valid: 
         return render(request, 'wallet/coinsuccess.html', {'num_of_coins': num_of_coins})
@@ -151,9 +145,86 @@ def coinsuccess(request):
 
 @login_required
 def coinsuccess2(request):
+    # breaks out of iframe
     return render(request, 'wallet/coinsuccess2.html')
 
 
+def create_coins(request, coinnum, sessionid, user):
+    # Do all of the crypto and ws interaction with the bank to create the coins
+    # http://www.saltycrane.com/blog/2008/06/how-to-get-current-date-and-time-in/
+    now = datetime.datetime.now() 
+    expirydate = now.year + 2
+
+    if user.username == "expiredspender":
+        expirydate = now.year - 2
+
+    start = time.time()
+    LT_user_state, user_commit = BLcred.BL_user_setup(blshim.params, [coinnum, expirydate])
+    fo.write("BLcred.BL_user_setup, " + str(time.time() - start) + "\n")
+
+    (C, ) = user_commit
+
+    start = time.time()
+    pi_proof_values = blshim.pi_proof_wallet(C, LT_user_state.R, coinnum, expirydate)
+    fo.write("blshim.pi_proof_wallet, " + str(time.time() - start) + "\n")    
+    
+    s_entry = blshim.serialise((pi_proof_values, user_commit, sessionid, coinnum, expirydate))
+
+    start = time.time()
+    r = requests.get(settings.BANK_URL + '/ws_preparation_validation_1/?serialised_entry=%s' %(s_entry))
+    fo.write("bank/ws_preparation_validation_1, " + str(time.time() - start) + "\n")
+    c = r.content
+
+    (valid, results) = blshim.deserialise(c)
+
+    if valid:
+        rnd, aap = results
+
+        start = time.time()
+        BLcred.BL_user_preparation(LT_user_state, rnd)
+        fo.write("BLcred.BL_user_preparation, " + str(time.time() - start) + "\n")   
+
+        start = time.time()
+        msg_to_issuer_e = epsilon = BLcred.BL_user_validation(LT_user_state, (blshim.y, ), aap)
+        fo.write("BLcred.BL_user_validation, " + str(time.time() - start) + "\n")  
+
+        # new webservice here
+        # sending e
+        s_entry = blshim.serialise((msg_to_issuer_e, user_commit, sessionid))
+        
+        start = time.time()
+        r = requests.get(settings.BANK_URL + '/ws_validation_2/?serialised_entry=%s' %(s_entry))
+        fo.write("bank/ws_validation_2, " + str(time.time() - start) + "\n")
+        c = r.content
+
+        msg_to_user_crcprp = blshim.deserialise(c)
+
+        start = time.time()
+        signature = BLcred.BL_user_validation2(LT_user_state, msg_to_user_crcprp)
+        fo.write("BLcred.BL_user_validation2, " + str(time.time() - start) + "\n")  
+
+        ##VALIDATION THAT THE COIN IS VALID
+        start = time.time()
+        b = BLcred.BL_check_signature(blshim.params, (blshim.y, ), signature)
+        fo.write("BLcred.BL_check_signature, " + str(time.time() - start) + "\n")
+
+        # Saving the coin into the DB
+        # signature and coins are different - mu
+        # serialising the stuff to save in the db
+        (m, LT_user_state.zet, LT_user_state.zet1, LT_user_state.zet2, om, omp, ro, ro1p, ro2p, mu) = signature
+
+        coin = (m, LT_user_state.zet, LT_user_state.zet1, LT_user_state.zet2, om, omp, ro, ro1p, ro2p)
+
+        serialised_code_rnd_tau_gam_R_att = blshim.serialise((coin, rnd, LT_user_state.tau, LT_user_state.gam, LT_user_state.R, LT_user_state.attributes))
+
+        c = Coins(user=user, value_of_coin=coinnum, serialised_code_rnd_tau_gam_R_att=serialised_code_rnd_tau_gam_R_att, expirydate=expirydate)
+        c.save()
+
+    return valid 
+
+
+#########################################################################################
+# Spending coins
 @login_required
 def payment(request, payment_amount, item_id):
     sessionid = request.session._session_key
@@ -166,8 +237,7 @@ def payment(request, payment_amount, item_id):
         pass
 
     # create a session db to record information about the sale for the validation later
-    p = PaymentSession(sessionID=sessionid, user=request.user, amount=payment_amount)
-    p.save()
+    PaymentSession(sessionID=sessionid, user=request.user, amount=payment_amount).save()
 
     context = {
         'payment_amount':payment_amount, 
@@ -178,100 +248,20 @@ def payment(request, payment_amount, item_id):
     return render(request, 'wallet/payment.html', context)
 
 
-@login_required
-def convertingcoinsbacktomoney(request, coinnum):
-    context = {
-        'coinnum': coinnum,
-        'BANK_URL': settings.BANK_URL
-    }
-    return render(request, 'wallet/convertingcoinsbacktomoney.html', context)
-
-
-@login_required
-def coindestroysuccess(request, num_of_coins):
-    # TODO NEED TO CHANGE THIS TO SOMETHING UNIQUE
-    request.user.coins_set.filter(value_of_coin=num_of_coins).delete()
-    context = {'num_of_coins': num_of_coins}
-    return render(request, 'wallet/coindestroysuccess.html', context)
-
-
-@login_required
-def coindestroysuccess2(request, num_of_coins):
-    context = {'num_of_coins': num_of_coins}
-    return render(request, 'wallet/coindestroysuccess2.html', context)
-
-
-def testcoincreation(request, coinnum, sessionid, user):
-    # http://www.saltycrane.com/blog/2008/06/how-to-get-current-date-and-time-in/
-    now = datetime.datetime.now() 
-    expirydate = now.year + 2
-
-    if user.username == "expiredspender":
-        expirydate = now.year - 2
-
-    # value, expiry date
-    LT_user_state, user_commit = BLcred.BL_user_setup(blshim.params, [coinnum, expirydate])
-
-    (C, ) = user_commit
-    pi_proof_values = blshim.pi_proof_wallet(C, LT_user_state.R, coinnum, expirydate)
-
-    s_entry = blshim.serialise((pi_proof_values, user_commit, sessionid, coinnum, expirydate))
-
-    r = requests.get(settings.BANK_URL + '/testPrepVal/?serialised_entry=%s' %(s_entry))
-    c = r.content
-
-    (valid, results) = blshim.deserialise(c)
-
-    if valid:
-        rnd, aap = results
-
-        BLcred.BL_user_preparation(LT_user_state, rnd)
-
-        msg_to_issuer_e = epsilon = BLcred.BL_user_validation(LT_user_state, (blshim.y, ), aap)
-
-        # new webservice here
-        # sending e
-        s_entry = blshim.serialise((msg_to_issuer_e, user_commit, sessionid))
-        
-        r = requests.get(settings.BANK_URL + '/testVal2/?serialised_entry=%s' %(s_entry))
-        c = r.content
-
-        msg_to_user_crcprp = blshim.deserialise(c)
-
-        signature = BLcred.BL_user_validation2(LT_user_state, msg_to_user_crcprp)
-
-        ##VALIDATION THAT THE COIN IS VALID
-        b = BLcred.BL_check_signature(blshim.params, (blshim.y, ), signature)
-
-        # Saving the coin into the DB
-        # signature and coins are different - mu
-        # serialising the stuff to save in the db
-        (m, LT_user_state.zet, LT_user_state.zet1, LT_user_state.zet2, om, omp, ro, ro1p, ro2p, mu) = signature
-
-        coin = (m, LT_user_state.zet, 
-                    LT_user_state.zet1, 
-                    LT_user_state.zet2, om, omp, ro, ro1p, ro2p)
-
-        serialised_code_rnd_tau_gam_R_att = blshim.serialise((coin, rnd, LT_user_state.tau, LT_user_state.gam, LT_user_state.R, LT_user_state.attributes))
-
-        c = Coins(user=user, value_of_coin=coinnum, serialised_code_rnd_tau_gam_R_att=serialised_code_rnd_tau_gam_R_att, expirydate=expirydate)
-        c.save()
-
-    return valid 
-
-
-def testspending(request):
+def ws_coin_list(request):
+    # generates list of coins to send to merchant
+    # together with the spending and reveal protocols attributes
     error = False
     error_reason = ""
     msg_to_merchant_epmupcoin = [""]
     serialised_entry = request.GET.get('entry')
     desc, sessionid, im = blshim.deserialise(serialised_entry)
 
+    # user is extracted from the session information
     ps = PaymentSession.objects.get(sessionID=sessionid)
     amount = ps.amount
     user = ps.user
 
-    # TODO make this easier to test
     list_of_coins = Coins.objects.filter(user=user).order_by('-value_of_coin')
 
     total_value = 0
@@ -298,9 +288,7 @@ def testspending(request):
             error_reason = "Wrong denominations of coins"
             print("FAIL")
 
-    # user should actually be sent with the webservice (cheating here)
-    # this is where the magic would happen with bundling up the coins to spend them
-    
+    # this is where the magic happens with bundling up the coins to spend them
     list_of_msgs = []
     if not error:
         # for each coin, deserialise and run spending 2
@@ -312,16 +300,22 @@ def testspending(request):
             code_rnd_tau_gam_R_att = c.serialised_code_rnd_tau_gam_R_att
             coin, rnd, tau, gam, R, att = blshim.deserialise(code_rnd_tau_gam_R_att)
             # run spending_2 on each coin
+            start = time.time()
             msg_to_merchant_epmupcoin = blshim.spending_2(tau, gam, coin, desc)
+            fo.write("blshim.spending_2, " + str(time.time() - start) + "\n")
 
             (m, zet, zet1, zet2, om, omp, ro, ro1p, ro2p) = coin
 
             # table 8, revealing attributes for each coin
             # first check each coin is the value it says it is
+            start = time.time()
             amount_rev_values = blshim.rev_attribute_1("amount", gam, zet, zet1, rnd, R, att)
+            fo.write("blshim.rev_attribute_1, " + str(time.time() - start) + "\n")
 
             # now check the coin is within its expiry date
+            start = time.time()
             expiry_rev_values = blshim.rev_attribute_1("expirydate", gam, zet, zet1, rnd, R, att)
+            fo.write("blshim.rev_attribute_1, " + str(time.time() - start) + "\n")
 
             list_of_msgs.append((msg_to_merchant_epmupcoin, amount_rev_values, expiry_rev_values, c.value_of_coin, c.expirydate))
 
@@ -332,3 +326,27 @@ def testspending(request):
     ps.delete()
     # return all signed coins at once        
     return HttpResponse(blshim.serialise((not error, error_reason, list_of_msgs)))
+
+
+#########################################################################################
+@login_required
+def convertingcoinsbacktomoney(request, coinnum, coinpk):
+    context = {
+        'coinnum': coinnum,
+        'BANK_URL': settings.BANK_URL,
+        'coinpk': coinpk
+    }
+    return render(request, 'wallet/convertingcoinsbacktomoney.html', context)
+
+
+@login_required
+def coindestroysuccess(request, num_of_coins, coinpk):
+    request.user.coins_set.filter(pk=coinpk).delete()
+    return render(request, 'wallet/coindestroysuccess.html', {'num_of_coins': num_of_coins})
+
+
+@login_required
+def coindestroysuccess2(request, num_of_coins):
+    # breaks out of iframe
+    context = {'num_of_coins': num_of_coins}
+    return render(request, 'wallet/coindestroysuccess2.html', context)
