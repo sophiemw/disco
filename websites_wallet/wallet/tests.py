@@ -231,8 +231,10 @@ class CreateCoinsTest(TestCase):
 		self.assertEqual(response.redirect_chain, [('/wallet/login/?next=/wallet/1/1/', 302)])
 
 
-def test_coindestroysuccess2(self):
+
+	def test_coindestroysuccess2(self):
 		c = Client()
+
 		c.post('/wallet/register/', {
 			"username": "username2",
 			"password1": "johnpassword",
@@ -241,5 +243,6 @@ def test_coindestroysuccess2(self):
 			"first_name": "John",
 			"last_name": "Smith"
 		})
-		response = c.get('/wallet/coindestroysuccess2/1')
+
+		response = c.get('/wallet/coindestroysuccess2/1/')
 		self.assertEqual(response.status_code, 200)

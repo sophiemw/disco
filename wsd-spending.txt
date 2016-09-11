@@ -1,8 +1,8 @@
 https://www.websequencediagrams.com/
 
-title Spending
+title Spending Coins
 
-participant User
+participant Client
 participant Browser
 participant Browser IFrame
 participant Merchant
@@ -11,18 +11,18 @@ participant Wallet\n(Payment session) as WalletPS
 participant Bank
 participant Bank\n(double spending\ncoin history) as BankDSCH
 participant Bank\n(Double spending\nz1 to user) as BankDS
-participant Bank\n(Users who have\ndouble spent) as BankUDS
+participant Bank\n(Clients who have\ndouble spent) as BankUDS
 
-User->Browser: Click on link to pay for item
+Client->Browser: Click on link to pay for item
 Browser->+Merchant: POST item_id/buy
 Merchant->-Browser: View with IFrame
 Browser->+Browser IFrame: (open iframe)
 Browser IFrame->+Wallet: GET /payment
-Note over Wallet: Check if user is already authenticated\n-redirect if already logged in\n-otherwise redirects to log in page
+Note over Wallet: Check if client is already authenticated\n-redirect if already logged in\n-otherwise redirects to log in page
 Wallet->WalletPS: (r/w)
-Wallet->-Browser IFrame: View prompting user to confirm payment
-Browser IFrame->User: Prompt confirmation
-User->Browser IFrame: Clicks yes
+Wallet->-Browser IFrame: View prompting Client to confirm payment
+Browser IFrame->Client: Prompt confirmation
+Client->Browser IFrame: Clicks yes
 Browser IFrame->+Merchant: /GET itemsuccess
 Merchant->+Wallet: ws - ws_coin_list
 Wallet->WalletPS: (r/w)
@@ -37,4 +37,4 @@ Merchant->-Browser IFrame: Javascript to exit IFrame\n& open /itemsuccess2
 Browser IFrame->-Browser: (close iframe)
 Browser->+Merchant: GET /itemsucces2
 Merchant->-Browser: view item bought confirmation
-Browser->User: confirmation
+Browser->Client: confirmation

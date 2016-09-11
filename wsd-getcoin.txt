@@ -1,29 +1,29 @@
 https://www.websequencediagrams.com/
 
-title Create coin
+title Creating Coins
 
-participant User
+participant Client
 participant Browser
 Participant Browser\nIFrame
 participant Wallet
 participant Bank
 participant Bank\n(session db)
 
-User->+Browser: click on link\nrequesting coin purchase
+Client->+Browser: click on link\nrequesting coin purchase
 Browser->+Wallet: POST /homepage
 Wallet->-Browser: View with IFrame
 Browser->+Browser\nIFrame: (open\nIFrame)
 Browser\nIFrame->+Bank: GET /coincreation
 note over Bank
-Check if User is already authenticated
+Check if Client is already authenticated
 - redirect if already logged in.
 - otherwise redirects to login page
 end note
 Bank->-Browser\nIFrame: "http: moved permantently to /coincreation"
 Browser\nIFrame->+Bank: GET /coincreation
 Bank->-Browser\nIFrame: View prompting user to confirm coins
-Browser\nIFrame->User: Prompt confirmation
-User->Browser\nIFrame: clicks YES
+Browser\nIFrame->Client: Prompt confirmation
+Client->Browser\nIFrame: clicks YES
 Browser\nIFrame->+Bank: GET /confirmcoincreation
 Bank->Bank\n(session db): (create)
 Bank->-Browser\nIFrame: "http: redirect to wallet/coinsuccess"
@@ -38,4 +38,4 @@ Wallet->-Browser\nIFrame: javascript to exit IFrame\n& to open /coinsuccess2
 Browser\nIFrame->-Browser: (close\nIFrame)
 Browser->+Wallet: GET /coinsuccess2
 Wallet->-Browser: view showing coins successfully created
-Browser->-User: confirmation
+Browser->-Client: confirmation

@@ -348,5 +348,4 @@ def coindestroysuccess(request, num_of_coins, coinpk):
 @login_required
 def coindestroysuccess2(request, num_of_coins):
     # breaks out of iframe
-    context = {'num_of_coins': num_of_coins}
-    return render(request, 'wallet/coindestroysuccess2.html', context)
+    return render(request, 'wallet/coindestroysuccess2.html', {'num_of_coins': num_of_coins})
